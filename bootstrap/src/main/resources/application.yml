@@ -1,10 +1,29 @@
 spring:
   application:
     name: aftersales-server
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   profiles:
     default: local
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:${MYSQL_PORT:3307}/${MYSQL_DATABASE:aftersales}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${MYSQL_USER:aftersales}
+    password: ${MYSQL_PASSWORD:aftersales_dev_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/structure
+    default-schema: ${MYSQL_DATABASE:aftersales}
+  jackson:
+    time-zone: UTC
 server:
   port: ${SERVER_PORT:8080}
+app:
+  security:
+    jwt-secret: ${JWT_SECRET}
+    jwt-issuer: aftersales-server
+    jwt-access-ttl: PT15M
+    jwt-refresh-ttl: P7D
 management:
   endpoints:
     web:
@@ -14,4 +33,3 @@ management:
     health:
       probes:
         enabled: true
-

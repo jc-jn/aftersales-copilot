@@ -42,3 +42,12 @@
 - Qdrant 只存向量和检索元数据；知识库、权限及业务状态的权威数据保存在 MySQL。
 - 所有金额以“分”为单位使用 `BIGINT`，所有时间使用 UTC 存储、前端按 Asia/Shanghai 展示。
 
+## 本地演示账号
+
+`local` 和 `demo` profile 会加载脱敏演示数据，`prod` 不加载默认账号。以下账号密码均为 `Demo@123456`：
+
+- 消费者：`customer01`
+- 客服：`agent01`
+- 管理员：`admin01`
+
+登录接口为 `POST /api/v1/auth/login`，也支持使用邮箱登录。部署前必须通过 `JWT_SECRET` 提供至少 32 字节的随机密钥，并移除或覆盖演示账号。

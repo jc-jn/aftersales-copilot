@@ -1,0 +1,61 @@
+CREATE TABLE product (
+    id BIGINT UNSIGNED NOT NULL,
+    product_code VARCHAR(32) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    brand VARCHAR(64) NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    description TEXT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at DATETIME(3) NOT NULL,
+    updated_at DATETIME(3) NOT NULL,
+    deleted_at DATETIME(3) NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_product_code UNIQUE (product_code),
+    INDEX idx_product_category_status (category, status),
+    CONSTRAINT chk_product_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE product_sku (
+    id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    sku_code VARCHAR(48) NOT NULL,
+    spec_json JSON NOT NULL,
+    sale_price_cent BIGINT NOT NULL,
+    warranty_months INT NOT NULL,
+    serial_required TINYINT(1) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL,
+    created_at DATETIME(3) NOT NULL,
+    updated_at DATETIME(3) NOT NULL,
+    deleted_at DATETIME(3) NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_product_sku_code UNIQUE (sku_code),
+    INDEX idx_product_sku_product_status (product_id, status),
+    CONSTRAINT fk_product_sku_product FOREIGN KEY (product_id) REFERENCES product (id),
+    CONSTRAINT chk_product_sku_price CHECK (sale_price_cent >= 0),
+    CONSTRAINT chk_product_sku_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE warranty_rule (
+    id BIGINT UNSIGNED NOT NULL,
+    rule_code VARCHAR(40) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    scope_type VARCHAR(20) NOT NULL,
+    scope_id BIGINT UNSIGNED NULL,
+    refund_only_days INT NOT NULL,
+    return_refund_days INT NOT NULL,
+    exchange_days INT NOT NULL,
+    repair_days INT NOT NULL,
+    requires_unopened TINYINT(1) NOT NULL DEFAULT 0,
+    effective_from DATETIME(3) NOT NULL,
+    effective_to DATETIME(3) NULL,
+    status VARCHAR(20) NOT NULL,
+    rule_json JSON NULL,
+    version INT NOT NULL DEFAULT 0,
+    created_at DATETIME(3) NOT NULL,
+    updated_at DATETIME(3) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_warranty_rule_code UNIQUE (rule_code),
+    INDEX idx_warranty_rule_match (scope_type, scope_id, status, effective_from),
+    CONSTRAINT chk_warranty_scope CHECK (scope_type IN ('GLOBAL', 'CATEGORY', 'PRODUCT', 'SKU')),
+    CONSTRAINT chk_warranty_status CHECK (status IN ('DRAFT', 'ACTIVE', 'INACTIVE'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
