@@ -1,0 +1,36 @@
+# Java / Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Node / Vue
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# TypeScript build output generated beside config files
+web/vite.config.js
+web/vite.config.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime data
+*.log
+uploads/
