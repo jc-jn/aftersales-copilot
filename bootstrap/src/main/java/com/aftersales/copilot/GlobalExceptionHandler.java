@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.aftersales.copilot.ticket.domain.TicketException;
 
 import java.util.Map;
 
@@ -29,6 +30,11 @@ public class GlobalExceptionHandler {
         Object details = field == null ? null : Map.of("field", field.getField(), "reason", field.getDefaultMessage());
         return ResponseEntity.badRequest()
                 .body(ApiResponse.failure("VALIDATION_ERROR", "请求参数不合法", details, MDC.get("traceId")));
+    }
+
+    @ExceptionHandler(TicketException.class)
+    ResponseEntity<ApiResponse<Void>> handleTicket(TicketException exception) {
+        return ResponseEntity.status(exception.status()).body(ApiResponse.failure(exception.code(), exception.getMessage(), exception.details(), MDC.get("traceId")));
     }
 
     @ExceptionHandler(Exception.class)
