@@ -29,6 +29,8 @@ Day 5-7 已落地：客服工作台摘要/队列、领取/自动分配/转派、
 
 - Day 8：提案表、创建/发布/确认/拒绝。
 - Day 9：Idempotency-Key、乐观锁、审计和并发测试。
+
+Day 8-9 已落地：提案创建/发布/确认/拒绝、仅退款模拟执行、退货类提案确认进入 `WAITING_RETURN`；确认使用 `Idempotency-Key + request hash + proposal_execution 唯一约束`，并校验工单/提案版本，关键操作写入 `audit_log`。
 - Day 10：仅退款执行器与模拟退款记录。
 - Day 11：退货单、物流填写、收货检查、退货退款。
 - Day 12：换货、补发模拟物流。

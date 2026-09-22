@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.aftersales.copilot.ticket.domain.TicketException;
+import com.aftersales.copilot.proposal.domain.ProposalException;
 
 import java.util.Map;
 
@@ -34,6 +35,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TicketException.class)
     ResponseEntity<ApiResponse<Void>> handleTicket(TicketException exception) {
+        return ResponseEntity.status(exception.status()).body(ApiResponse.failure(exception.code(), exception.getMessage(), exception.details(), MDC.get("traceId")));
+    }
+
+    @ExceptionHandler(ProposalException.class)
+    ResponseEntity<ApiResponse<Void>> handleProposal(ProposalException exception) {
         return ResponseEntity.status(exception.status()).body(ApiResponse.failure(exception.code(), exception.getMessage(), exception.details(), MDC.get("traceId")));
     }
 
