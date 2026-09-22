@@ -1,16 +1,21 @@
 <script setup lang="ts">
-const status = '工程骨架已就绪'
+import { computed, ref } from 'vue'
+import axios from 'axios'
+type Role = 'CUSTOMER' | 'AGENT'
+const role = ref<Role>('CUSTOMER'), token = ref(''), loading = ref(false), error = ref('')
+const tickets = ref<any[]>([]), selected = ref<any | null>(null), message = ref('')
+const orders = ref([{ id: 3101, name: '星云 X1 手机', status: 'DELIVERED' }])
+const form = ref({ orderItemId: 3101, requestedType: 'REFUND_ONLY', title: '', description: '' })
+const api = computed(() => axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1', headers: token.value ? { Authorization: `Bearer ${token.value}` } : {} }))
+const statusLabel: Record<string, string> = { SUBMITTED: '已提交', PENDING_ASSIGNMENT: '待分配', PENDING_AGENT: '待客服处理', PENDING_CUSTOMER: '待用户补充', RESOLVED: '已解决', REJECTED: '已拒绝', CANCELLED: '已取消', CLOSED: '已关闭' }
+async function loadTickets() { loading.value = true; error.value = ''; try { tickets.value = (await api.value.get('/tickets')).data.data } catch (e: any) { error.value = e.response?.data?.message || '请先登录或检查服务' } finally { loading.value = false } }
+async function createTicket() { loading.value = true; try { selected.value = (await api.value.post('/tickets', { ...form.value, clientRequestId: crypto.randomUUID() })).data.data; await loadTickets() } catch (e: any) { error.value = e.response?.data?.message || '创建失败' } finally { loading.value = false } }
+async function openTicket(t: any) { selected.value = (await api.value.get(`/tickets/${t.id}`)).data.data }
+async function command(action: string) { if (!selected.value) return; loading.value = true; try { const path = action === 'SEND_MESSAGE' ? `/tickets/${selected.value.id}/messages` : `/tickets/${selected.value.id}/${action.toLowerCase().replace('_', '-')}`; const body = action === 'SEND_MESSAGE' ? { content: message.value, visibility: 'PUBLIC', messageType: 'TEXT', version: selected.value.version } : { version: selected.value.version }; selected.value = (await api.value.post(path, body)).data.data; message.value = ''; await loadTickets() } catch (e: any) { error.value = e.response?.data?.message || '操作失败' } finally { loading.value = false } }
 </script>
-
 <template>
-  <main class="shell">
-    <h1>AfterSales Copilot</h1>
-    <p>{{ status }}</p>
-    <p class="muted">Vue 3 + TypeScript + Vite</p>
-  </main>
+<main class="shell"><header><div><h1>AfterSales Copilot</h1><p class="muted">Day 5–7 售后工单工作台</p></div><el-radio-group v-model="role"><el-radio-button label="CUSTOMER">消费者</el-radio-button><el-radio-button label="AGENT">客服</el-radio-button></el-radio-group></header><el-alert v-if="error" :title="error" type="error" show-icon />
+<section class="grid"><el-card v-if="role === 'CUSTOMER'"><template #header>创建售后工单</template><el-form label-position="top"><el-form-item label="订单项"><el-select v-model="form.orderItemId"><el-option v-for="o in orders" :key="o.id" :value="o.id" :label="`${o.name} (${o.status})`" /></el-select></el-form-item><el-form-item label="售后类型"><el-select v-model="form.requestedType"><el-option label="仅退款" value="REFUND_ONLY" /><el-option label="退货退款" value="RETURN_REFUND" /><el-option label="换货" value="EXCHANGE" /><el-option label="维修" value="REPAIR" /></el-select></el-form-item><el-form-item label="标题"><el-input v-model="form.title" /></el-form-item><el-form-item label="问题描述"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item><el-button type="primary" :loading="loading" @click="createTicket">提交工单</el-button></el-form></el-card><el-card><template #header>{{ role === 'CUSTOMER' ? '我的工单' : '客服队列' }} <el-button link @click="loadTickets">刷新</el-button></template><el-empty v-if="!tickets.length" description="暂无工单" /><el-table v-else :data="tickets" @row-click="openTicket"><el-table-column prop="ticketNo" label="工单号" /><el-table-column prop="title" label="标题" /><el-table-column label="状态"><template #default="{ row }"><el-tag>{{ statusLabel[row.status] || row.status }}</el-tag></template></el-table-column></el-table></el-card></section>
+<el-drawer v-model="selected" title="工单详情" size="45%"><template v-if="selected"><el-descriptions :column="1" border><el-descriptions-item label="工单号">{{ selected.ticketNo }}</el-descriptions-item><el-descriptions-item label="状态">{{ statusLabel[selected.status] || selected.status }}</el-descriptions-item><el-descriptions-item label="问题">{{ selected.description }}</el-descriptions-item></el-descriptions><div class="actions"><el-button v-for="action in selected.availableActions" :key="action" @click="command(action)">{{ action === 'SEND_MESSAGE' ? '回复' : action }}</el-button></div><el-input v-if="selected.availableActions?.includes('SEND_MESSAGE')" v-model="message" placeholder="输入公开回复" /></template></el-drawer></main>
 </template>
-
-<style scoped>
-.shell { max-width: 720px; margin: 15vh auto; padding: 2rem; font-family: system-ui, sans-serif; }
-.muted { color: #64748b; }
-</style>
+<style scoped>.shell{max-width:1180px;margin:0 auto;padding:32px 20px;font-family:system-ui,sans-serif}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}h1{margin:0}.muted{color:#64748b}.grid{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(420px,1.2fr);gap:20px;margin-top:20px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}@media(max-width:800px){.grid{grid-template-columns:1fr}header{align-items:flex-start;gap:12px;flex-direction:column}}</style>

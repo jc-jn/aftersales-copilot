@@ -1,5 +1,5 @@
 package com.aftersales.copilot.ticket.api;
-import com.aftersales.copilot.auth.domain.AuthenticatedUser; import com.aftersales.copilot.auth.domain.UserRole; import com.aftersales.copilot.common.api.ApiResponse; import com.aftersales.copilot.ticket.application.TicketApplicationService; import jakarta.validation.Valid; import org.slf4j.MDC; import org.springframework.security.core.annotation.AuthenticationPrincipal; import org.springframework.web.bind.annotation.*; import java.util.*;
+import com.aftersales.copilot.auth.domain.AuthenticatedUser; import com.aftersales.copilot.auth.domain.UserRole; import com.aftersales.copilot.common.api.ApiResponse; import com.aftersales.copilot.ticket.application.TicketApplicationService; import com.aftersales.copilot.ticket.domain.TicketException; import jakarta.validation.Valid; import org.slf4j.MDC; import org.springframework.security.core.annotation.AuthenticationPrincipal; import org.springframework.web.bind.annotation.*; import java.util.*;
 @RestController @RequestMapping("/api/v1/tickets") public class TicketController {
  private final TicketApplicationService service; public TicketController(TicketApplicationService service){this.service=service;}
  @PostMapping public ApiResponse<?> create(@AuthenticationPrincipal AuthenticatedUser u,@Valid @RequestBody TicketRequests.Create r){return ok(service.create(u,r));}
@@ -12,6 +12,8 @@ import com.aftersales.copilot.auth.domain.AuthenticatedUser; import com.aftersal
  @PostMapping("/{id}/close") public ApiResponse<?> close(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id,@Valid @RequestBody TicketRequests.Command r){return ok(service.transition(u,id,"CLOSED",r.version(),"CLOSE"));}
  @PostMapping("/{id}/request-info") public ApiResponse<?> requestInfo(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id,@Valid @RequestBody TicketRequests.Command r){return ok(service.transition(u,id,"PENDING_CUSTOMER",r.version(),"REQUEST_INFO"));}
  @PostMapping("/{id}/claim") public ApiResponse<?> claim(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id,@Valid @RequestBody TicketRequests.Command r){return ok(service.claim(u,id,r.version()));}
+ @PostMapping("/{id}/auto-assign") public ApiResponse<?> autoAssign(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id){if(u.role()==UserRole.CUSTOMER)throw new TicketException("TICKET_AGENT_ONLY","仅客服或管理员可自动分配",org.springframework.http.HttpStatus.FORBIDDEN);return ok(service.autoAssign(id,0,u.id(),java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)));}
+ @PostMapping("/{id}/transfer") public ApiResponse<?> transfer(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id,@Valid @RequestBody TicketRequests.Transfer r){return ok(service.transfer(u,id,r));}
  @PostMapping("/{id}/reject") public ApiResponse<?> reject(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long id,@Valid @RequestBody TicketRequests.Command r){return ok(service.transition(u,id,"REJECTED",r.version(),"REJECT"));}
  private <T> ApiResponse<T> ok(T v){return ApiResponse.success(v,MDC.get("traceId"));}
 }

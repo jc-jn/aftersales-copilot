@@ -132,6 +132,8 @@
 | POST | `/tickets/{id}/claim` | 领取未分配工单 |
 | POST | `/tickets/{id}/assign` | 管理员/有权限者分配 |
 | POST | `/tickets/{id}/transfer` | 转派并记录原因 |
+
+Day 5-7 实现补充：`POST /tickets/{id}/auto-assign` 由客服/管理员触发自动分配；`GET /customer/order-items/{itemId}/after-sales-eligibility` 返回 Java 计算的四类资格；`GET/POST /admin/warranty-rules` 和 `PUT /admin/warranty-rules/{id}/status` 用于管理员规则管理。
 | POST | `/tickets/{id}/request-info` | 请求用户补充，进入 `PENDING_CUSTOMER` |
 | POST | `/tickets/{id}/reject` | 拒绝并记录规则依据 |
 | POST | `/tickets/{id}/resolve` | 对无需执行提案的特殊结案；MVP 常规四类由执行服务推进 |
