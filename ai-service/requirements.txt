@@ -4,4 +4,6 @@ pydantic==2.10.5
 pydantic-settings==2.7.1
 httpx==0.28.1
 aio-pika==9.5.5
+pypdf==5.1.0
+python-docx==1.1.2
 aio-pika==9.5.5

@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import axios from 'axios'
+import { useSseChat } from './useSseChat'
 type Role = 'CUSTOMER' | 'AGENT'
 const role = ref<Role>('CUSTOMER'), token = ref(''), loading = ref(false), error = ref('')
 const tickets = ref<any[]>([]), selected = ref<any | null>(null), proposals = ref<any[]>([]), timeline = ref<any[]>([]), message = ref('')
 const orders = ref([{ id: 3101, name: '星云 X1 手机', status: 'DELIVERED' }])
 const form = ref({ orderItemId: 3101, requestedType: 'REFUND_ONLY', title: '', description: '' })
+const chatInput = ref('')
+const chat = useSseChat(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1', token.value)
 const api = computed(() => axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1', headers: token.value ? { Authorization: `Bearer ${token.value}` } : {} }))
 const statusLabel: Record<string, string> = { SUBMITTED: '已提交', PENDING_ASSIGNMENT: '待分配', PENDING_AGENT: '待客服处理', PENDING_CUSTOMER: '待用户补充', RESOLVED: '已解决', REJECTED: '已拒绝', CANCELLED: '已取消', CLOSED: '已关闭' }
 async function loadTickets() { loading.value = true; error.value = ''; try { tickets.value = (await api.value.get('/tickets')).data.data } catch (e: any) { error.value = e.response?.data?.message || '请先登录或检查服务' } finally { loading.value = false } }
 async function createTicket() { loading.value = true; try { selected.value = (await api.value.post('/tickets', { ...form.value, clientRequestId: crypto.randomUUID() })).data.data; await loadTickets() } catch (e: any) { error.value = e.response?.data?.message || '创建失败' } finally { loading.value = false } }
 async function openTicket(t: any) { selected.value = (await api.value.get(`/tickets/${t.id}`)).data.data; proposals.value = (await api.value.get(`/tickets/${t.id}/proposals`)).data.data; timeline.value = (await api.value.get(`/tickets/${t.id}/timeline`)).data.data }
+async function askAi() { if (selected.value && chatInput.value.trim()) { await chat.send(selected.value.id, chatInput.value); chatInput.value = '' } }
 async function command(action: string) { if (!selected.value) return; loading.value = true; try { const path = action === 'SEND_MESSAGE' ? `/tickets/${selected.value.id}/messages` : `/tickets/${selected.value.id}/${action.toLowerCase().replace('_', '-')}`; const body = action === 'SEND_MESSAGE' ? { content: message.value, visibility: 'PUBLIC', messageType: 'TEXT', version: selected.value.version } : { version: selected.value.version }; selected.value = (await api.value.post(path, body)).data.data; message.value = ''; await loadTickets() } catch (e: any) { error.value = e.response?.data?.message || '操作失败' } finally { loading.value = false } }
 </script>
 <template>

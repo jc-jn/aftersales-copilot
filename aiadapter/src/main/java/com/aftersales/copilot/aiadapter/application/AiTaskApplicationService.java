@@ -28,4 +28,10 @@ public class AiTaskApplicationService implements AiTaskScheduler {
         } else jdbc.update("UPDATE ai_task SET status='FAILED',error_code=?,error_message=?,finished_at=?,updated_at=? WHERE id=? AND status<>'SUCCEEDED'",payload.getOrDefault("errorCode","AI_FAILED"),payload.getOrDefault("errorMessage","analysis failed"),now,now,taskId);
         return Map.of("accepted",true);
     }
+    @Transactional public Map<String,Object> documentCallback(Map<String,Object> payload) throws Exception {
+        long documentId=((Number)payload.get("documentId")).longValue(); String status=String.valueOf(payload.getOrDefault("status","FAILED")); LocalDateTime now=LocalDateTime.now(ZoneOffset.UTC);
+        if("SUCCEEDED".equals(status)) { var chunks=(List<Map<String,Object>>)payload.getOrDefault("chunks",List.of()); jdbc.update("UPDATE knowledge_document SET status='INDEXED',chunk_count=?,updated_at=? WHERE id=?",chunks.size(),now,documentId); for(var c:chunks) jdbc.update("INSERT IGNORE INTO knowledge_chunk_meta(id,document_id,chunk_id,index_version,sequence_no,section_title,content_hash,token_count,qdrant_point_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",Math.abs(UUID.randomUUID().getMostSignificantBits()),documentId,c.get("chunkId"),payload.getOrDefault("indexVersion",1),c.getOrDefault("sequenceNo",0),c.get("sectionTitle"),c.get("contentHash"),0,c.get("qdrantPointId"),now); }
+        else jdbc.update("UPDATE knowledge_document SET status='FAILED',error_message=?,updated_at=? WHERE id=?",payload.getOrDefault("errorMessage","index failed"),now,documentId);
+        return Map.of("accepted",true);
+    }
 }

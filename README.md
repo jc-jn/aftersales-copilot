@@ -56,6 +56,10 @@ cd ai-service
 ```
 
 工单创建事务会同时写入 `ai_task` 和 `outbox_event`；Java 定时发布器投递 `ticket.ai.analyze.requested.v1`，Python 消费后通过 HMAC 回调 Java，结果幂等写入 `ai_analysis`。真实 OpenAI-compatible Provider 需启用 `real-ai` profile 并配置 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_CHAT_MODEL`。
+
+知识库管理员上传接口为 `POST /api/v1/admin/knowledge/documents`（multipart 字段：`file`、`title`、`documentType`、`scopeType`、`scopeId`、`versionLabel`）。Java 会先写入 MinIO，再创建 `DOCUMENT_INDEX` AI task 和 Outbox 事件；Python 解析 Markdown/TXT、PDF 或 DOCX，按标题/段落切片，使用 Fake Embedding 写入 Qdrant，成功后回调 `/internal/v1/ai-results/document-index`。
+
+Day 19/20 已增加 RAG 检索和对话链路：`ai-service/evals/rag_cases.jsonl` 是初始评测集；Python `POST /internal/v1/chat/stream` 返回 `meta/token/done` SSE，Java `POST /api/v1/tickets/{ticketId}/ai-chat/stream` 做鉴权和代理，前端 [useSseChat.ts](/F:/AfterSales/web/src/useSseChat.ts) 负责浏览器端拆包。Python 只通过 `/internal/v1/tools/*` 读取订单、物流和工单历史，不提供退款或业务写工具。
 - Qdrant 只存向量和检索元数据；知识库、权限及业务状态的权威数据保存在 MySQL。
 - 所有金额以“分”为单位使用 `BIGINT`，所有时间使用 UTC 存储、前端按 Asia/Shanghai 展示。
 

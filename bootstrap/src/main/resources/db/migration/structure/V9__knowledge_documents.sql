@@ -1,0 +1,9 @@
+CREATE TABLE knowledge_base (
+    id BIGINT UNSIGNED NOT NULL, name VARCHAR(200) NOT NULL, code VARCHAR(64) NOT NULL, description VARCHAR(500) NULL, status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE', created_by BIGINT UNSIGNED NULL, created_at DATETIME(3) NOT NULL, updated_at DATETIME(3) NOT NULL, PRIMARY KEY(id), UNIQUE KEY uk_knowledge_base_code(code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE knowledge_document (
+    id BIGINT UNSIGNED NOT NULL, knowledge_base_id BIGINT UNSIGNED NOT NULL, title VARCHAR(200) NOT NULL, document_type VARCHAR(20) NOT NULL, scope_type VARCHAR(20) NOT NULL DEFAULT 'GLOBAL', scope_id BIGINT UNSIGNED NULL, object_key VARCHAR(512) NOT NULL, file_name VARCHAR(255) NOT NULL, content_type VARCHAR(120) NOT NULL, size_bytes BIGINT NOT NULL, sha256 CHAR(64) NOT NULL, version_label VARCHAR(40) NOT NULL, status VARCHAR(20) NOT NULL, effective_from DATETIME(3) NULL, effective_to DATETIME(3) NULL, chunk_count INT NOT NULL DEFAULT 0, index_version INT NOT NULL DEFAULT 1, error_message TEXT NULL, created_by BIGINT UNSIGNED NULL, created_at DATETIME(3) NOT NULL, updated_at DATETIME(3) NOT NULL, archived_at DATETIME(3) NULL, PRIMARY KEY(id), KEY idx_knowledge_document_status(status), UNIQUE KEY uk_knowledge_document_hash(knowledge_base_id,sha256,index_version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE knowledge_chunk_meta (
+    id BIGINT UNSIGNED NOT NULL, document_id BIGINT UNSIGNED NOT NULL, chunk_id VARCHAR(80) NOT NULL, index_version INT NOT NULL, sequence_no INT NOT NULL, section_title VARCHAR(300) NULL, content_hash CHAR(64) NOT NULL, token_count INT NULL, qdrant_point_id VARCHAR(100) NOT NULL, created_at DATETIME(3) NOT NULL, PRIMARY KEY(id), UNIQUE KEY uk_knowledge_chunk_id(chunk_id), CONSTRAINT fk_chunk_document FOREIGN KEY(document_id) REFERENCES knowledge_document(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
