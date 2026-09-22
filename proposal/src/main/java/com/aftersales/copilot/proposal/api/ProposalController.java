@@ -18,5 +18,8 @@ public class ProposalController {
     @PostMapping("/proposals/{proposalId}/publish") public ApiResponse<?> publish(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long proposalId,@Valid @RequestBody ProposalRequests.Version r){return ok(service.publish(u,proposalId,r));}
     @PostMapping("/proposals/{proposalId}/reject") public ApiResponse<?> reject(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long proposalId,@Valid @RequestBody ProposalRequests.Version r){return ok(service.reject(u,proposalId,r));}
     @PostMapping("/proposals/{proposalId}/confirm") public ApiResponse<?> confirm(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long proposalId,@Valid @RequestBody ProposalRequests.Confirm r,@RequestHeader(value="Idempotency-Key",required=false) String key){return ok(service.confirm(u,proposalId,r,key));}
+    @PostMapping("/return-orders/{returnId}/shipment") public ApiResponse<?> shipment(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long returnId,@Valid @RequestBody ProposalRequests.Shipment r){return ok(service.shipReturn(u,returnId,r));}
+    @PostMapping("/return-orders/{returnId}/receive") public ApiResponse<?> receive(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long returnId,@Valid @RequestBody ProposalRequests.Receive r){return ok(service.receiveReturn(u,returnId,r));}
+    @PostMapping("/return-orders/{returnId}/inspect") public ApiResponse<?> inspect(@AuthenticationPrincipal AuthenticatedUser u,@PathVariable long returnId,@Valid @RequestBody ProposalRequests.Inspect r){return ok(service.inspectReturn(u,returnId,r));}
     private ApiResponse<?> ok(Object value){return ApiResponse.success(value,MDC.get("traceId"));}
 }

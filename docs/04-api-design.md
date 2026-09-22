@@ -156,6 +156,8 @@ Day 5-7 实现补充：`POST /tickets/{id}/auto-assign` 由客服/管理员触�
 | POST | `/return-orders/{id}/receive` | 客服模拟确认收货 |
 | POST | `/return-orders/{id}/inspect` | 客服填写检查结果并触发后续执行 |
 
+Day 10-14 实现说明：仅退款确认立即生成 `refund_record` 并进入 `RESOLVED`；退货退款、换货、维修确认生成 `return_order` 并进入 `WAITING_RETURN`。用户提交物流进入 `IN_TRANSIT`，客服收货进入 `RECEIVED`，检查通过后分别触发退款、换货补发模拟物流或维修寄回模拟物流。
+
 创建提案请求：
 
 ```json

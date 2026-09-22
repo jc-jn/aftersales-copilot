@@ -10,4 +10,7 @@ public final class ProposalRequests {
                          @NotNull Integer version) {}
     public record Version(@NotNull Integer version) {}
     public record Confirm(@NotNull Integer ticketVersion, @NotNull Integer proposalVersion) {}
+    public record Shipment(@NotBlank String carrierCode, @NotBlank String trackingNo, @NotNull Integer version) {}
+    public record Receive(@NotNull Integer version) {}
+    public record Inspect(@NotBlank String result, @Size(max=1000) String note, @NotNull Integer version) {}
 }
