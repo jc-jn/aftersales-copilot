@@ -16,6 +16,11 @@ spring:
     default-schema: ${MYSQL_DATABASE:aftersales}
   jackson:
     time-zone: UTC
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:aftersales}
+    password: ${RABBITMQ_PASSWORD:rabbitmq_dev_password}
 server:
   port: ${SERVER_PORT:8080}
 app:
@@ -24,6 +29,12 @@ app:
     jwt-issuer: aftersales-server
     jwt-access-ttl: PT15M
     jwt-refresh-ttl: P7D
+  ai:
+    internal-secret: ${AI_INTERNAL_SECRET:change-me-local-only}
+    outbox-interval-ms: ${AI_OUTBOX_INTERVAL_MS:1000}
+    llm-base-url: ${LLM_BASE_URL:https://api.openai.com/v1}
+    llm-api-key: ${LLM_API_KEY:}
+    llm-model: ${LLM_CHAT_MODEL:gpt-4o-mini}
 management:
   endpoints:
     web:

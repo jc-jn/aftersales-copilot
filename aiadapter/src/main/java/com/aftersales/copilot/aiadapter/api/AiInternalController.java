@@ -1,0 +1,3 @@
+package com.aftersales.copilot.aiadapter.api;
+import com.aftersales.copilot.aiadapter.application.AiTaskApplicationService; import org.springframework.web.bind.annotation.*; import java.util.Map;
+@RestController @RequestMapping("/internal/v1/ai-results") public class AiInternalController { private final AiTaskApplicationService service; public AiInternalController(AiTaskApplicationService service){this.service=service;} @PostMapping("/ticket-analysis") public Map<String,Object> callback(@RequestBody Map<String,Object> body) throws Exception {return service.callback(body);} }

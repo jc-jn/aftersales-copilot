@@ -39,6 +39,23 @@
 - 第一版采用“模块化单体 Java 服务 + 独立 Python AI 服务”，不拆 Spring Cloud 微服务。
 - 浏览器只访问 Java API；Java 代理 AI 流式输出，Python AI 服务不直接暴露给公网。
 - RabbitMQ 用于文档处理、工单 AI 分析和结案摘要；用户对话使用同步 SSE，不经过 MQ。
+
+### 第三周 AI 异步链路
+
+本地默认使用 Fake Provider，不调用收费模型。启动 Java 服务和基础设施后，启动 Python API：
+
+```powershell
+cd ai-service
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+另开进程启动工单分析消费者：
+
+```powershell
+.\.venv\Scripts\python.exe -m app.consumer
+```
+
+工单创建事务会同时写入 `ai_task` 和 `outbox_event`；Java 定时发布器投递 `ticket.ai.analyze.requested.v1`，Python 消费后通过 HMAC 回调 Java，结果幂等写入 `ai_analysis`。真实 OpenAI-compatible Provider 需启用 `real-ai` profile 并配置 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_CHAT_MODEL`。
 - Qdrant 只存向量和检索元数据；知识库、权限及业务状态的权威数据保存在 MySQL。
 - 所有金额以“分”为单位使用 `BIGINT`，所有时间使用 UTC 存储、前端按 Asia/Shanghai 展示。
 
