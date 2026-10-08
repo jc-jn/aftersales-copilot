@@ -2,18 +2,21 @@ import asyncio, hashlib, hmac, json, time, uuid
 from typing import Any
 import httpx
 from .config import settings
-from .providers import provider
 from .indexer import index_document
+from .callbacks import post_callback
+from .model_calls import measured_call
+from .observability import trace_id, normalize_trace
 
 async def process_envelope(envelope: dict[str,Any], client: httpx.AsyncClient | None = None) -> dict[str,Any]:
     if envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "ticket.ai.analyze.requested.v1": raise ValueError("unsupported event")
     data=envelope["data"]
-    try: result=await provider().structured(json.dumps(data,ensure_ascii=False)); status="SUCCEEDED"; error_code=None; error_message=None
-    except Exception as exc: result=None; status="FAILED"; error_code="AI_PROVIDER_FAILED"; error_message=str(exc)[:500]
-    callback={"taskId":data["taskId"],"ticketId":data["ticketId"],"ticketVersion":data["ticketVersion"],"status":status,"result":result,"errorCode":error_code,"errorMessage":error_message,"usage":{"provider":"fake","model":"fake-v1","promptVersion":"ticket-analysis-v1","inputTokens":0,"outputTokens":40,"estimatedCostMicros":0,"latencyMs":0}}
-    body=json.dumps(callback,separators=(",",":"),ensure_ascii=False).encode(); path="/internal/v1/ai-results/ticket-analysis"; ts=str(int(time.time()*1000)); nonce=str(uuid.uuid4()); canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; signature=hmac.new(settings.ai_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest(); headers={"Content-Type":"application/json","X-Internal-Service":"ai-service","X-Internal-Timestamp":ts,"X-Internal-Nonce":nonce,"X-Internal-Signature":signature,"X-Trace-Id":envelope.get("traceId",str(uuid.uuid4()))}
-    owns=client is None; client=client or httpx.AsyncClient(timeout=10); response=await client.post(settings.java_internal_base_url+path,content=body,headers=headers); response.raise_for_status()
-    if owns: await client.aclose()
+    token = trace_id.set(normalize_trace(envelope.get("traceId")))
+    try:
+        result, usage, error_code = await measured_call(json.dumps(data, ensure_ascii=False), "TICKET_ANALYSIS", "ticket-analysis-v1")
+        callback={"callId":data.get("callId") or f"legacy-{data['taskId']}","taskId":data["taskId"],"ticketId":data["ticketId"],"ticketVersion":data["ticketVersion"],"status":"FAILED" if error_code else "SUCCEEDED","result":result,"errorCode":error_code,"usage":usage}
+        await post_callback("/internal/v1/ai-results/ticket-analysis", callback, client)
+    finally:
+        trace_id.reset(token)
     return callback
 
 async def process_document_envelope(envelope: dict[str,Any]) -> dict[str,Any]:
@@ -23,15 +26,18 @@ async def process_document_envelope(envelope: dict[str,Any]) -> dict[str,Any]:
     ts = str(int(time.time()*1000)); nonce = str(uuid.uuid4())
     canonical = f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(b'').hexdigest()}"
     signature = hmac.new(settings.ai_internal_secret.encode(), canonical.encode(), hashlib.sha256).hexdigest()
-    headers = {"X-Internal-Service":"ai-service", "X-Internal-Timestamp":ts, "X-Internal-Nonce":nonce, "X-Internal-Signature":signature}
+    headers = {"X-Internal-Service":"ai-service", "X-Internal-Timestamp":ts, "X-Internal-Nonce":nonce, "X-Internal-Signature":signature, "X-Trace-Id":normalize_trace(envelope.get("traceId"))}
     async with httpx.AsyncClient(timeout=10) as http:
         response = await http.post(settings.java_internal_base_url+path, content=b"", headers=headers)
         response.raise_for_status()
         data["objectUrl"] = response.json()["url"]
     result = await index_document(data)
     data=envelope["data"]; callback={"taskId":data["taskId"],"documentId":data["documentId"],"indexVersion":data["indexVersion"],**result}
-    body=json.dumps(callback,separators=(",",":"),ensure_ascii=False).encode(); path="/internal/v1/ai-results/document-index"; ts=str(int(time.time()*1000)); nonce=str(uuid.uuid4()); canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; signature=hmac.new(settings.ai_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest(); headers={"Content-Type":"application/json","X-Internal-Service":"ai-service","X-Internal-Timestamp":ts,"X-Internal-Nonce":nonce,"X-Internal-Signature":signature};
-    async with httpx.AsyncClient(timeout=10) as http: response=await http.post(settings.java_internal_base_url+path,content=body,headers=headers); response.raise_for_status()
+    token = trace_id.set(normalize_trace(envelope.get("traceId")))
+    try:
+        await post_callback("/internal/v1/ai-results/document-index", callback)
+    finally:
+        trace_id.reset(token)
     return callback
 
 async def consume_forever() -> None:

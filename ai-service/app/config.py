@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
+from typing import Literal
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     minio_endpoint: str = "http://localhost:9000"
     java_internal_base_url: str = "http://localhost:8080"
     rabbitmq_url: str = "amqp://aftersales:rabbitmq_dev_password@localhost:5672/"
-    llm_provider: str = "fake"
+    llm_provider: Literal["fake"] = "fake"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "aftersales_kb_v1"
     embedding_dimension: int = 8

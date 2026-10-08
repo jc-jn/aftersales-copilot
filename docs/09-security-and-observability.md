@@ -89,7 +89,7 @@ Java 和 Python 分别暴露 Prometheus metrics。建议告警：
 ## 8. 模型成本治理
 
 - 配置 `daily_soft_limit_micros`、`project_hard_limit_micros`。
-- 40 元触发管理员告警；50 元时关闭非管理员实时 AI，工单仍走人工流程。
+- Day 23 在管理看板展示 40 元预警和 50 元限额状态，仅监测，不自动阻断。关闭非管理员实时 AI 的策略留到完整计费后实现，工单始终可走人工流程。
 - 价格配置格式：provider、model、input/output 每百万 Token 单价、币种、生效日期、来源 URL/备注。
 - 只有确认过官方价格才计算金额；未知时 `estimated_cost_micros=null`，不假装精确。
 - 调用前估算上下文长度，超过上限做摘要/截断，不发送无限历史。
@@ -118,4 +118,16 @@ Java 和 Python 分别暴露 Prometheus metrics。建议告警：
 - AI 对话先校验工单访问权限，只接收 message，浏览器不能注入工具或检索上下文。内部订单工具必须传 ticketId，并验证订单与工单绑定。
 - 当前浏览器对话仅检索 `scopeType=GLOBAL`，商品/SKU/CATEGORY 范围文档需后续接入 Java 可信检索上下文，客户端不能自行扩大范围。
 - Java 出站签名使用 `JAVA_INTERNAL_SECRET`，Python 出站签名使用 `AI_INTERNAL_SECRET`；生产禁止默认/占位密钥，要求至少 32 字节且两者不同。生产只加载结构迁移。
-- 本地基础设施端口仅绑定 127.0.0.1。未集成恶意文件扫描；PDF/DOCX 容器资源隔离和 Day 23 可观测性仍在后续范围。
+- 本地基础设施端口仅绑定 127.0.0.1。未集成恶意文件扫描；PDF/DOCX 容器资源隔离仍在后续范围。
+
+## 12. Day 23 实施契约
+
+- Java 控制台输出 ECS JSON；Python 输出 JSON。应用自有请求和调用日志仅记录方法、路由模板、状态、耗时、调用 ID/业务 ID、错误分类与合规 traceId，不记录正文、查询字符串、Token、密钥、签名 URL 或完整异常消息。框架诊断日志仍需按部署环境设置级别和访问控制。
+- traceId 允许 `[A-Za-z0-9_-]{1,64}`；不合法时重新生成。HTTP、Outbox envelope、Python consumer、HMAC 回调和 SSE 代理传递同一 traceId。
+- Java `/actuator/prometheus` 仅管理员；Python `GET /internal/v1/metrics` 必须 HMAC。HTTP/AI 指标仅使用有限路由、operation/status/provider 标签，不以用户/工单/traceId 作标签。
+- `ai_call_log` 保存每次模型调用（含失败）的元数据，callId 唯一，重复回调不重复计数。Token 缺失为 NULL，不能把字符数或字节数当作 Token；Fake 成本为 0，Fake Token 为未知。真实模型没有供应商 usage 或未配置已核实 CNY 价格时成本为 NULL。
+- 价格从服务器配置注入，包含 provider/model、每百万 Token 输入/输出人民币单价、生效日期和来源。Java 统一使用十进制定价，按人民币微元向上取整；不接受回调自报费用，不自动做汇率转换。
+- 管理看板以 Asia/Shanghai 自然日筛选，from/to 均包含，最多 366 天；趋势补齐零调用日期。已知成本小计和未知调用数量分开显示，预算显示已知成本是否达到 2/40/50 元阈值，存在未知成本时不宣称实际费用未超标。
+- 本次提供只读概览/用量/预算状态，不引入自动阻断策略、价格在线编辑、Grafana/Loki 部署或真实 Python Provider。
+- 已有分析统一迁为历史未知，旧 RabbitMQ 分析消息以 `legacy-{taskId}` 幂等兼容、费用保持未知。Java Mapper 扫描仅限 `@Mapper` 接口，业务调度接口不作为 Mapper 注册。
+- JWT 鉴权结果保存在当前请求属性中，供 SSE 的 ASYNC/ERROR 二次分派恢复身份；无 HTTP Session，初始请求仍执行路径授权和工单资源权限校验。

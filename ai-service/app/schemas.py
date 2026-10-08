@@ -54,6 +54,7 @@ class DocumentIndexRequest(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 class ChatRequest(BaseModel):
+    call_id: str | None = Field(default=None, alias="callId", pattern=r"^[A-Za-z0-9_-]{1,64}$")
     ticket_id: int = Field(alias="ticketId")
     message: str = Field(min_length=1, max_length=4000)
     context: dict[str, Any] = Field(default_factory=dict)

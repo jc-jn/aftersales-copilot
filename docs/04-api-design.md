@@ -267,6 +267,10 @@ data: {"code":"AI_PROVIDER_UNAVAILABLE","message":"AI 服务暂不可用，请�
 
 - `GET /admin/dashboard/overview?from=&to=`
 - `GET /admin/statistics/ai-usage?groupBy=day`
+
+Day 23 已实现契约：上述两条接口均接收 `from=YYYY-MM-DD&to=YYYY-MM-DD`（Asia/Shanghai，包含首尾日期，默认最近 7 天，最多 366 天）。`groupBy` 当前仅支持 `day`，其他值返回 400。概览返回工单状态、AI task 状态、知识文档状态、售后模拟退款汇总、Outbox backlog 和 AI 预算状态；用量返回成功/失败/中断调用、已知 Token、未知 Token/成本调用数及逐日序列。所有数据仅管理员可查询，金额单位为人民币微元（业务退款仍为分），未知成本不计为免费。
+
+`GET /actuator/prometheus` 为 Java 管理员 Prometheus 指标；Python `GET /internal/v1/metrics` 使用已有 HMAC 契约。`POST /internal/v1/ai-results/chat-usage` 回写对话调用元数据，只接受已绑定工单和 task/call 身份，不包含 Prompt 或回复内容。
 - `GET /admin/audit-logs`
 - `GET/PUT /admin/ai-settings`：管理 provider、model、endpoint、Fallback 开关和预算限额。MVP 的 API Key 只从服务器环境变量注入，接口仅返回“是否已配置”，不允许读取或更新密钥。
 - `POST /admin/ai-settings/test`：使用服务器环境中的密钥发起最小测试请求并记录成本。

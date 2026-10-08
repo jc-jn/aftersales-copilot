@@ -64,7 +64,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception exception) {
-        log.error("Unhandled request error, traceId={}", MDC.get("traceId"), exception);
+        log.atError().addKeyValue("event", "request_failed").addKeyValue("errorType", exception.getClass().getSimpleName())
+                .log("Unhandled request error");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.failure("INTERNAL_ERROR", "服务器内部错误", null, MDC.get("traceId")));
     }

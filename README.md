@@ -2,7 +2,7 @@
 
 面向 3C 电商售后场景的 Java + Python AI 全栈项目。Java 服务负责用户、订单、工单、状态机、权限、事务和审计；Python 服务负责分类、信息抽取、RAG、回复建议、摘要和处理提案。任何退款、换货或维修状态变更都必须由 Java 服务校验并执行，AI 不直接访问或修改业务数据库。
 
-当前已完成前三周功能及第 4 周 Day 22，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。Day 23 的结构化日志、metrics、成本统计与管理看板尚未实现。
+当前已完成前三周功能及第 4 周 Day 22–23，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。
 
 ## 固定技术基线
 
@@ -55,7 +55,7 @@ cd ai-service
 .\.venv\Scripts\python.exe -m app.consumer
 ```
 
-工单创建事务会同时写入 `ai_task` 和 `outbox_event`；Java 定时发布器投递 `ticket.ai.analyze.requested.v1`，Python 消费后通过 HMAC 回调 Java，结果幂等写入 `ai_analysis`。真实 OpenAI-compatible Provider 需启用 `real-ai` profile 并配置 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_CHAT_MODEL`。
+工单创建事务会同时写入 `ai_task` 和 `outbox_event`；Java 定时发布器投递 `ticket.ai.analyze.requested.v1`，Python 消费后通过 HMAC 回调 Java，结果幂等写入 `ai_analysis`。Java 兼容 Provider 可通过 `real-ai` profile 配置；当前异步分析/对话主链路使用 Python Fake Provider，不能仅启用 Java profile 就切换该链路。
 
 知识库管理员上传接口为 `POST /api/v1/admin/knowledge/documents`（multipart 字段：`file`、`title`、`documentType`、`scopeType`、`scopeId`、`versionLabel`）。Java 会先写入 MinIO，再创建 `DOCUMENT_INDEX` AI task 和 Outbox 事件；Python 解析 Markdown/TXT、PDF 或 DOCX，按标题/段落切片，使用 Fake Embedding 写入 Qdrant，成功后回调 `/internal/v1/ai-results/document-index`。
 
@@ -88,3 +88,13 @@ Day 21：成功分析且通过安全条件时，Java 自动保存 `source=AI,sta
 - 演示 seed 改为 `V1000__demo_seed.sql`。已有旧 V9 seed 数据库先按部署手册检查历史并备份；不要直接修改迁移历史。
 
 验证：`.\mvnw.cmd test`；Python 在 `ai-service` 下执行 `.\.venv\Scripts\python.exe -m pytest -q`。Docker 29 与旧 docker-java API 不兼容时，可用 `.\mvnw.cmd test '-Dapi.version=1.44'`，Testcontainers 仍需要能拉取测试镜像。
+
+## Day 23 可观测性与管理看板
+
+管理员 `admin01` 登录前端后进入运营看板：上海自然日筛选、工单状态、AI 任务/文档状态、Outbox backlog、调用成功率、每日调用/成本趋势、模型用量和 CSV 导出。普通用户看不到管理员统计，后端也校验角色。
+
+- Java 输出 ECS JSON、Python 输出 JSON，HTTP/MQ/回调/SSE 传递 `X-Trace-Id`；不记录 Prompt、Token、签名 URL 和原始异常消息。
+- Java 指标 `/actuator/prometheus` 仅管理员；Python `GET /internal/v1/metrics` 需 HMAC。指标名和鉴权采集方式见 [部署手册](docs/11-deployment.md)。Python consumer 为独立进程，持久用量以 MySQL 为准。
+- `ai_call_log` 按 callId 去重记录成功/失败调用。Fake 免费且不伪造 Token；真实用量或价格未核实时成本为未知。`AI_PRICES_JSON=[]` 默认不计未经核实的模型费用，价格按已核实 CNY 来源配置。
+- V11 将历史分析 usage 标为未知；旧消息兼容为 `legacy-{taskId}`。预算默认 2/40/50 元，**仅监测预警，未自动阻断 AI**；存在未知成本时实际费用仍需核实。
+- Python 当前仅支持 `LLM_PROVIDER=fake`；真实 Python Provider、预算自动关闭策略和完整监控部署尚未实现。Java 旧 `real-ai` Provider 不在现有 Python 主调用链中，不能把启用 Java profile 视为 Python 已切到真实模型。

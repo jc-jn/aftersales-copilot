@@ -165,6 +165,20 @@ npm run dev
 
 ## 11. 运维命令
 
+### Day 23 日志、指标与计费
+
+Java 控制台为 ECS JSON；Python 自有日志为 JSON。Python 使用 `--no-access-log`，避免 uvicorn 原始请求日志包含查询内容。两个服务传递合规 `X-Trace-Id`。Java HTTP 入口日志中的 `durationMs` 为分派耗时（异步请求见 `sse_completed` 全流耗时）；Python HTTP 耗时包括流的生命周期。
+
+Java `/actuator/prometheus` 使用管理员 Bearer Token；Python `GET /internal/v1/metrics` 需 `aftersales-server` HMAC，不能直接用不带鉴权的 Prometheus scrape。生产接入时需内网采集器提供动态 HMAC/服务鉴权，禁止为了采集而开放匿名公网指标。异步 consumer 的进程指标不并入 Python API 进程；MySQL 看板为持久统计来源。
+
+指标包括 HTTP 请求/耗时、Python 模型调用/耗时、Java Outbox backlog/最老等待、AI 失败任务/调用、提案执行失败、DLQ 消息与采集状态；进程重启会重置进程 Counter，数据库 Gauge 每 30 秒刷新。SQL 或 RabbitMQ 不可用时指标为 NaN 且采集 up=0，不能视为 0。
+
+`AI_PRICES_JSON` 默认 `[]`，不内置未经核实的价格。每项含 `provider`、`model`、`inputCnyPerMillion`、`outputCnyPerMillion`、`currency="CNY"`、`effectiveFrom="YYYY-MM-DD"`、`sourceUrl`、`verified=true`；应仅在核实官方来源后填写。费用单位为人民币微元，1 元 = 1,000,000；服务器重新计价，不采用回调自报金额。预算阈值由 `AI_DAILY_SOFT_LIMIT_MICROS/AI_PROJECT_WARNING_MICROS/AI_PROJECT_HARD_LIMIT_MICROS` 配置，默认 2/40/50 元。本次仅监测预警，未自动阻断调用。
+
+V11 将所有升级前分析的 usage 标为未知，并建立 `ai_call_log`。旧 MQ 消息使用 `legacy-{taskId}` 去重并保留未知费用。升级应先暂停写入/消费、发布 Java 并完成迁移，再发布 Python，最后恢复服务，避免旧消费者返回伪造的 Token 数值。
+
+本地 Docker 29 使用旧 docker-java 时可指定 `-Dapi.version=1.44`。Ryuk 镜像不可拉取但 MySQL 镜像已在本机时，可仅为本次测试设置 `$env:TESTCONTAINERS_RYUK_DISABLED='true'` 再跑 `.\mvnw.cmd test '-Dapi.version=1.44'`；测试会显式停止自身容器，不作为部署默认配置。
+
 ```powershell
 docker compose -f deploy/compose.yml ps
 docker compose -f deploy/compose.yml logs -f aftersales-server

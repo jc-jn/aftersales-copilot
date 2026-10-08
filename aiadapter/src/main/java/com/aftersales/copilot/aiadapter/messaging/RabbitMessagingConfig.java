@@ -5,4 +5,6 @@ import org.springframework.amqp.core.*; import org.springframework.context.annot
  @Bean Queue aiAnalysisQueue(){return QueueBuilder.durable("ai.ticket.analysis.q").withArgument("x-dead-letter-exchange","aftersales.dlx").build();}
  @Bean Binding aiAnalysisBinding(Queue aiAnalysisQueue,TopicExchange aiExchange){return BindingBuilder.bind(aiAnalysisQueue).to(aiExchange).with("ticket.ai.analyze.requested.v1");}
  @Bean TopicExchange deadLetterExchange(){return new TopicExchange("aftersales.dlx",true,false);}
+ @Bean Queue aiDeadLetterQueue(){return QueueBuilder.durable("ai.dead-letter.q").build();}
+ @Bean Binding aiDeadLetterBinding(Queue aiDeadLetterQueue,TopicExchange deadLetterExchange){return BindingBuilder.bind(aiDeadLetterQueue).to(deadLetterExchange).with("#");}
 }

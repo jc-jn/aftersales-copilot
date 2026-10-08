@@ -53,6 +53,11 @@ app:
       upload: ${RATE_LIMIT_UPLOAD:10}
       confirm: ${RATE_LIMIT_CONFIRM:10}
   ai:
+    prices-json: ${AI_PRICES_JSON:[]}
+    budget:
+      daily-soft-limit-micros: ${AI_DAILY_SOFT_LIMIT_MICROS:2000000}
+      project-warning-micros: ${AI_PROJECT_WARNING_MICROS:40000000}
+      project-hard-limit-micros: ${AI_PROJECT_HARD_LIMIT_MICROS:50000000}
     base-url: ${AI_BASE_URL:http://localhost:8000}
     internal-secret: ${AI_INTERNAL_SECRET}
     java-internal-secret: ${JAVA_INTERNAL_SECRET}
@@ -61,11 +66,18 @@ app:
     llm-api-key: ${LLM_API_KEY:}
     llm-model: ${LLM_CHAT_MODEL:gpt-4o-mini}
 management:
+  metrics:
+    tags:
+      application: aftersales-server
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+logging:
+  structured:
+    format:
+      console: ecs

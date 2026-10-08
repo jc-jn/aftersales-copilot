@@ -66,7 +66,7 @@ public class KnowledgeDocumentService {
                     "fileName", file.getOriginalFilename(), "contentType", type, "contentSha256", sha,
                     "metadata", Map.of("documentType", documentType, "scopeType", scopeType, "scopeId", scopeId == null ? "" : scopeId));
             Map<String, Object> envelope = Map.of("eventId", UUID.randomUUID().toString(), "eventType", "knowledge.document.index.requested.v1",
-                    "occurredAt", now.toString(), "traceId", UUID.randomUUID().toString(), "producer", "aftersales-server", "schemaVersion", 1, "data", data);
+                    "occurredAt", now.toString(), "traceId", com.aftersales.copilot.common.observability.TraceIds.normalize(org.slf4j.MDC.get("traceId")), "producer", "aftersales-server", "schemaVersion", 1, "data", data);
             jdbc.update("INSERT INTO ai_task(id,biz_type,biz_id,dedup_key,status,attempt_count,max_attempts,request_snapshot,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
                     taskId, "DOCUMENT_INDEX", documentId, "DOCUMENT_INDEX:" + documentId + ":1", "PENDING", 0, 3, mapper.writeValueAsString(data), now, now);
             jdbc.update("INSERT INTO outbox_event(event_id,aggregate_type,aggregate_id,event_type,routing_key,payload,status,retry_count,created_at,updated_at) VALUES(?,?,?,?,?,?,?,0,?,?)",

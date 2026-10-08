@@ -12,6 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -24,7 +26,13 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
     @Bean
+    SecurityContextRepository securityContextRepository() {
+        return new RequestAttributeSecurityContextRepository();
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter, ObjectMapper objectMapper,
+            SecurityContextRepository contextRepository,
             SecurityStateStore stateStore,
             @Value("${app.security.rate-limit.auth:20}") int authLimit,
             @Value("${app.security.rate-limit.ai:30}") int aiLimit,
@@ -35,12 +43,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .securityContext(context -> context.securityContextRepository(contextRepository))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout",
                                 "/api/v1/ping", "/actuator/health/**").permitAll()
                         .requestMatchers("/internal/v1/**").access((authentication, context) ->
                                 new AuthorizationDecision(Boolean.TRUE.equals(context.getRequest().getAttribute("internalHmacVerified"))))
-                        .requestMatchers("/api/v1/admin/**", "/actuator/info").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**", "/actuator/info", "/actuator/prometheus").hasRole("ADMIN")
                         .requestMatchers("/api/v1/agent/**").hasAnyRole("AGENT", "ADMIN")
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().denyAll())

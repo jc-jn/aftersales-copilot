@@ -67,6 +67,8 @@ Day 10-14 已落地：仅退款模拟退款、退货单物流/收货/检查、�
 Day 22 已落地：管理员路径授权与默认拒绝、CORS 白名单、工单 AI/附件资源权限、文件格式/MIME/内容与大小校验、私有随机对象 key 和 300 秒下载签名、Redis 分类限流与 HMAC 防重放、双向独立内部密钥、生产配置启动校验、基础设施端口绑定本机，以及安全回归测试。知识索引在消费时领取下载签名，避免队列积压导致过期；演示 seed 移到 V1000，避免结构迁移版本冲突。尚未集成恶意文件扫描。
 
 - Day 23：结构化日志、metrics、成本统计、管理看板。
+
+Day 23 已落地：Java ECS/Python JSON 日志与 trace 传递、Java 管理员/Python HMAC Prometheus 指标、V11 AI 调用账本和重复回调去重、未知历史/Token/成本口径、经核实 CNY 价格配置与十进制计价、管理员日期筛选/概览/模型与每日用量/CSV 导出/ECharts 趋势、只读预算预警。真实 Python Provider、预算自动阻断和 Grafana/Loki 部署留待后续。
 - Day 24：Java/Python/前端测试补齐，契约测试。
 - Day 25：RAG 阈值评测、Prompt 注入和无答案测试。
 - Day 26：Docker 全栈、Nginx、云环境或本地 demo 部署。

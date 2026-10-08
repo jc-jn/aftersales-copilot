@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-@MapperScan("com.aftersales.copilot")
+@MapperScan(basePackages="com.aftersales.copilot", annotationClass=org.apache.ibatis.annotations.Mapper.class)
 public class AfterSalesApplication {
     public static void main(String[] args) {
         SpringApplication.run(AfterSalesApplication.class, args);

@@ -3,14 +3,21 @@ from fastapi import Depends, FastAPI, Request, HTTPException
 from pydantic import ValidationError
 from fastapi.responses import StreamingResponse
 from .config import settings
-from .providers import provider
 from .schemas import AnalyzeRequest
 from .schemas import DocumentIndexRequest, ChatRequest
 from .security import verify_internal
 from .indexer import index_document
 from .agent import stream_answer
+from .observability import ObservabilityMiddleware, metrics
+from .model_calls import measured_call
+from fastapi.responses import Response
 
 app = FastAPI(title="AfterSales AI Service", version="0.2.0", docs_url=None if settings.app_env == "prod" else "/docs", redoc_url=None if settings.app_env == "prod" else "/redoc", openapi_url=None if settings.app_env == "prod" else "/openapi.json")
+app.add_middleware(ObservabilityMiddleware)
+
+@app.get("/internal/v1/metrics")
+async def prometheus(body: bytes = Depends(verify_internal)):
+    return Response(metrics(), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 def parse_payload(schema, body: bytes):
     try:
@@ -31,8 +38,8 @@ async def ready() -> dict[str, str]:
 @app.post("/internal/v1/tickets/analyze")
 async def analyze(request: Request, body: bytes = Depends(verify_internal)):
     payload = parse_payload(AnalyzeRequest, body)
-    result = await provider().structured(json.dumps(payload.model_dump(), ensure_ascii=False))
-    return {"taskId":payload.task_id,"ticketId":int(payload.ticket.get("id",0)),"ticketVersion":int(payload.ticket.get("version",0)),"status":"SUCCEEDED","result":result,"usage":{"provider":"fake","model":"fake-v1","promptVersion":"ticket-analysis-v1","inputTokens":len(body),"outputTokens":40,"estimatedCostMicros":0,"latencyMs":0}}
+    result, usage, error = await measured_call(json.dumps(payload.model_dump(), ensure_ascii=False), "TICKET_ANALYSIS", "ticket-analysis-v1")
+    return {"taskId":payload.task_id,"ticketId":int(payload.ticket.get("id",0)),"ticketVersion":int(payload.ticket.get("version",0)),"status":"FAILED" if error else "SUCCEEDED","result":result,"usage":usage,"errorCode":error}
 
 @app.post("/internal/v1/documents/index")
 async def index(request: Request, body: bytes = Depends(verify_internal)):
@@ -45,6 +52,6 @@ async def chat_stream(request: Request, body: bytes = Depends(verify_internal)):
     payload = parse_payload(ChatRequest, body)
     async def events():
         import json
-        async for event in stream_answer(payload.ticket_id, payload.message, payload.context):
+        async for event in stream_answer(payload.ticket_id, payload.message, payload.context, payload.call_id):
             yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
     return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})

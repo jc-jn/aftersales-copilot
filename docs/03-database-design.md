@@ -284,6 +284,8 @@ erDiagram
 
 保存请求级元数据，不默认保存完整 Prompt：`trace_id`、`task_id`、`provider`、`model`、`operation`、Token、估算成本、延迟、状态、错误码、`prompt_hash`、时间。生产模式禁止存储密码、密钥、完整地址和电话。
 
+Day 23 V11 已实现最小调用账本：`call_id` 主键、`trace_id`、`task_id/ticket_id`、`operation`、provider/model/prompt_version、可空的 Token/费用/耗时、`cost_status/price_source`、`status/error_code`、开始/结束时间。已存在分析迁入 `HISTORICAL/HISTORICAL_UNKNOWN`，且清除旧的伪零 usage；调用 ID 在 Java 发起时注册，Python 回调只能完成已绑定记录，重复回调不增加调用次数。不保存完整 Prompt、消息正文和签名 URL。
+
 ## 7. 提案与售后执行
 
 ### 7.1 `service_proposal`

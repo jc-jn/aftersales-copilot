@@ -28,7 +28,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("local")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability
+@org.springframework.context.annotation.Import(Day2IntegrationTest.AsyncSecurityController.class)
 class Day2IntegrationTest {
+    @org.springframework.web.bind.annotation.RestController
+    static class AsyncSecurityController {
+        @org.springframework.web.bind.annotation.GetMapping(value="/api/v1/test/async-security", produces=MediaType.TEXT_EVENT_STREAM_VALUE)
+        reactor.core.publisher.Flux<org.springframework.http.codec.ServerSentEvent<String>> stream() {
+            return reactor.core.publisher.Flux.just(
+                    org.springframework.http.codec.ServerSentEvent.builder("first").event("token").build(),
+                    org.springframework.http.codec.ServerSentEvent.builder("complete").event("done").build())
+                    .delayElements(java.time.Duration.ofMillis(20));
+        }
+    }
+
+    @Test
+    void day23AsyncStreamRetainsAuthenticationAndRejectsAnonymousRequest() throws Exception {
+        String path = "/api/v1/test/async-security";
+        assertThat(restTemplate.getForEntity(url(path), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        String token = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username", "customer01", "password", "Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        HttpHeaders headers = new HttpHeaders(); headers.setBearerAuth(token);
+        var response = restTemplate.exchange(url(path), HttpMethod.GET, new HttpEntity<>(headers), String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("event:token", "data:first", "event:done", "data:complete");
+        assertThat(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE)).isNull();
+    }
+
     @Container
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0.40")
             .withDatabaseName("aftersales_test")
@@ -57,9 +83,73 @@ class Day2IntegrationTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    com.aftersales.copilot.statistics.application.AiCallService calls;
+
+    @Autowired
+    com.aftersales.copilot.aiadapter.application.AiTaskApplicationService aiTasks;
+
+    @Test
+    void day23LegacyCallbackKeepsCostUnknownAndDeduplicates() throws Exception {
+        String token = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username", "customer01", "password", "Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        HttpHeaders headers = new HttpHeaders(); headers.setBearerAuth(token); headers.setContentType(MediaType.APPLICATION_JSON);
+        var response = restTemplate.postForEntity(url("/api/v1/tickets"), new HttpEntity<>(Map.of("orderItemId", 3101,
+                "requestedType", "REFUND_ONLY", "title", "Legacy usage", "description", "Legacy callback regression",
+                "clientRequestId", java.util.UUID.randomUUID().toString()), headers), String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var ticket = objectMapper.readTree(response.getBody()).path("data");
+        long ticketId = ticket.path("id").asLong(), taskId = 12345L;
+        jdbcTemplate.update("INSERT INTO ai_task(id,biz_type,biz_id,dedup_key,status,created_at,updated_at) VALUES(?,'TICKET_ANALYSIS',?,?,'PENDING',UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
+                taskId, ticketId, "legacy-regression:" + taskId);
+        Map<String,Object> payload = new java.util.HashMap<>(Map.of("taskId", taskId, "ticketId", ticketId,
+                "ticketVersion", ticket.path("version").asInt(), "status", "SUCCEEDED", "result", Map.of("needsHuman", true),
+                "usage", Map.of("provider", "fake", "model", "fake-v1", "estimatedCostMicros", 0)));
+        assertThat(aiTasks.callback(payload).get("accepted")).isEqualTo(true);
+        assertThat(aiTasks.callback(payload).get("duplicate")).isEqualTo(true);
+        payload.put("callId", "legacy-" + taskId);
+        assertThat(aiTasks.callback(payload).get("duplicate")).isEqualTo(true);
+        var row = jdbcTemplate.queryForMap("SELECT * FROM ai_call_log WHERE call_id=?", "legacy-" + taskId);
+        assertThat(row.get("estimated_cost_micros")).isNull();
+        assertThat(row.get("input_tokens")).isNull();
+        assertThat(row.get("cost_status")).isEqualTo("HISTORICAL_UNKNOWN");
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_analysis WHERE task_id=?", Integer.class, taskId)).isEqualTo(1);
+    }
+
+    @Test
+    void day23CostCallbackIsIdempotentAndRecomputesFakeUsage() {
+        String callId = java.util.UUID.randomUUID().toString();
+        calls.begin(callId, null, 42L, "CHAT", "integration-trace");
+        Map<String,Object> usage = Map.of("provider", "fake", "model", "fake-v1", "inputTokens", 999,
+                "outputTokens", 999, "estimatedCostMicros", 999999, "latencyMs", 10);
+        assertThat(calls.finish(callId, null, 42L, "CHAT", "SUCCEEDED", usage, null)).isTrue();
+        assertThat(calls.finish(callId, null, 42L, "CHAT", "SUCCEEDED", usage, null)).isFalse();
+        var row = jdbcTemplate.queryForMap("SELECT * FROM ai_call_log WHERE call_id=?", callId);
+        assertThat(((Number)row.get("estimated_cost_micros")).longValue()).isZero();
+        assertThat(row.get("input_tokens")).isNull();
+        assertThat(row.get("status")).isEqualTo("SUCCEEDED");
+    }
+
+    @Test
+    void day23DashboardAndPrometheusRequireAdministrator() throws Exception {
+        String customer = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username","customer01", "password","Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        String admin = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username","admin01", "password","Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        HttpHeaders customerHeaders = new HttpHeaders(); customerHeaders.setBearerAuth(customer);
+        HttpHeaders adminHeaders = new HttpHeaders(); adminHeaders.setBearerAuth(admin);
+        for (String path : new String[]{"/api/v1/admin/dashboard/overview", "/api/v1/admin/statistics/ai-usage", "/actuator/prometheus"}) {
+            assertThat(restTemplate.exchange(url(path), HttpMethod.GET, new HttpEntity<>(customerHeaders), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            var response = restTemplate.exchange(url(path), HttpMethod.GET, new HttpEntity<>(adminHeaders), String.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        }
+        var invalid = restTemplate.exchange(url("/api/v1/admin/statistics/ai-usage?groupBy=model"), HttpMethod.GET, new HttpEntity<>(adminHeaders), String.class);
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     @Test
     void migrationsAndDemoSeedAreApplied() {
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1", Integer.class)).isEqualTo(11);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1", Integer.class)).isEqualTo(12);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user", Integer.class)).isEqualTo(4);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM product", Integer.class)).isEqualTo(3);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM customer_order", Integer.class)).isEqualTo(3);

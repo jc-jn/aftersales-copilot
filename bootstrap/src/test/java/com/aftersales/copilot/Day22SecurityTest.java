@@ -148,7 +148,7 @@ class Day22SecurityTest {
     @Test void aiChatRequiresTicketAccessBeforeMakingNetworkCall() {
         var guard = mock(TicketAccessGuard.class);
         doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN)).when(guard).requireAccess(any(), eq(10L));
-        var controller = new AiChatProxyController(WebClient.builder(), new ObjectMapper(), "http://localhost:8000", JAVA_SECRET, guard);
+        var controller = new AiChatProxyController(WebClient.builder(), new ObjectMapper(), "http://localhost:8000", JAVA_SECRET, guard, mock(com.aftersales.copilot.statistics.application.AiCallService.class));
         assertThatThrownBy(() -> controller.stream(user(3, UserRole.CUSTOMER), 10,
                 new AiChatProxyController.ChatMessage("hello"))).isInstanceOf(ResponseStatusException.class);
     }
