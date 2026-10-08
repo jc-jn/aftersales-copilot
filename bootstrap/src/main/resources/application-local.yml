@@ -5,4 +5,8 @@ spring:
 
 app:
   security:
-    jwt-secret: ${JWT_SECRET:local-only-jwt-secret-change-before-deployment-2026}
+    jwt-secret: ${JWT_SECRET:local-development-jwt-secret-change-before-deployment-2026}
+    local-state-fallback: true
+  ai:
+    internal-secret: ${AI_INTERNAL_SECRET:local-development-ai-secret-change-before-deployment-2026}
+    java-internal-secret: ${JAVA_INTERNAL_SECRET:local-development-java-secret-change-before-deployment-2026}

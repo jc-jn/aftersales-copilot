@@ -5,3 +5,5 @@ spring:
 app:
   security:
     jwt-secret: ${JWT_SECRET}
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    local-state-fallback: false

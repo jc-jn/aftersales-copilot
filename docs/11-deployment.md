@@ -53,6 +53,8 @@ MINIO_BUCKET=aftersales-private
 
 JWT_SECRET=<at-least-32-random-bytes>
 AI_INTERNAL_SECRET=<different-random-secret>
+JAVA_INTERNAL_SECRET=<another-distinct-32-byte-random-secret>
+REDIS_URL=redis://:<strong-random>@localhost:6379/0
 
 LLM_PROVIDER=dashscope
 LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
@@ -65,6 +67,10 @@ CORS_ALLOWED_ORIGINS=https://support.example.com
 ```
 
 `.env` 加入 `.gitignore`；只提交 `.env.example`。模型名和价格必须在申请账号后依据供应商控制台/官方文档填写。
+
+Java 不自动读取 `.env`：使用 IDE 环境变量配置或将变量导入当前 shell。Python 从 `ai-service/.env` 读取；两端 HMAC 密钥必须一致，`JAVA_INTERNAL_SECRET` 用于 Java → Python，`AI_INTERNAL_SECRET` 用于 Python → Java。仅 `local` profile 提供开发默认值和 Redis 内存回退；`demo/prod` 必须配置密钥并运行 Redis。`prod` 禁止同时激活 `local/demo`，拒绝开发密码和占位密钥。
+
+结构迁移 V1–V10，演示数据使用独立 V1000 版本，避免与知识库 V9 冲突。曾执行旧 `V9__demo_seed.sql` 的数据库需先备份、检查 `flyway_schema_history` 并制定迁移方案，不能直接 `repair` 或删除数据。
 
 ## 4. 本地开发启动顺序
 

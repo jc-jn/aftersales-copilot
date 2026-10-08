@@ -5,7 +5,7 @@ from app.main import app
 from app.config import settings
 
 def signed(body: bytes, path: str):
-    ts=str(int(time.time()*1000)); nonce=str(time.time_ns()); canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; sig=hmac.new(settings.ai_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest()
+    ts=str(int(time.time()*1000)); nonce=str(time.time_ns()); canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; sig=hmac.new(settings.java_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest()
     return {"X-Internal-Service":"aftersales-server","X-Internal-Timestamp":ts,"X-Internal-Nonce":nonce,"X-Internal-Signature":sig}
 
 def test_chat_stream_without_qdrant_returns_transport_error():

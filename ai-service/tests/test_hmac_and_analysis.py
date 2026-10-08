@@ -4,7 +4,7 @@ from app.main import app
 from app.config import settings
 
 def headers(body: bytes, path: str, nonce: str | None = None):
-    ts=str(int(time.time()*1000)); nonce=nonce or f"n-{time.time_ns()}"; canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; sig=hmac.new(settings.ai_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest()
+    ts=str(int(time.time()*1000)); nonce=nonce or f"n-{time.time_ns()}"; canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; sig=hmac.new(settings.java_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest()
     return {"X-Internal-Service":"aftersales-server","X-Internal-Timestamp":ts,"X-Internal-Nonce":nonce,"X-Internal-Signature":sig}
 
 def test_analysis_fake_provider():

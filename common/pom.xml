@@ -4,5 +4,8 @@
   <artifactId>common</artifactId><packaging>jar</packaging>
   <dependencies>
     <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-annotations</artifactId></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId></dependency>
+    <dependency><groupId>io.minio</groupId><artifactId>minio</artifactId><version>8.2.2</version></dependency>
   </dependencies>
 </project>

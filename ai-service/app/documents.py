@@ -26,6 +26,7 @@ def parse_document(data: bytes, file_name: str, content_type: str) -> str:
             from pypdf import PdfReader
             reader=PdfReader(io.BytesIO(data))
             if reader.is_encrypted: raise ValueError("DOCUMENT_UNSUPPORTED_ENCRYPTED")
+            if len(reader.pages) > 200: raise ValueError("DOCUMENT_PAGE_LIMIT")
             return "\n\n".join(page.extract_text() or "" for page in reader.pages)
         except ImportError as exc: raise ValueError("DOCUMENT_PARSER_UNAVAILABLE") from exc
     if suffix == ".docx":

@@ -19,6 +19,25 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    ResponseEntity<ApiResponse<Void>> handleStatus(org.springframework.web.server.ResponseStatusException exception) {
+        return ResponseEntity.status(exception.getStatusCode()).body(ApiResponse.failure(
+                exception.getReason() == null ? "REQUEST_REJECTED" : exception.getReason(), "请求被拒绝", null, MDC.get("traceId")));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiResponse<Void>> handleUploadSize(Exception exception) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ApiResponse.failure("FILE_SIZE_INVALID", "文件超出大小限制", null, MDC.get("traceId")));
+    }
+
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    ResponseEntity<ApiResponse<Void>> handleMalformed(Exception exception) {
+        return ResponseEntity.badRequest().body(ApiResponse.failure("VALIDATION_ERROR", "请求参数不合法", null, MDC.get("traceId")));
+    }
+
     @ExceptionHandler(AuthException.class)
     ResponseEntity<ApiResponse<Void>> handleAuth(AuthException exception) {
         return ResponseEntity.status(exception.status())

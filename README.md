@@ -2,7 +2,7 @@
 
 面向 3C 电商售后场景的 Java + Python AI 全栈项目。Java 服务负责用户、订单、工单、状态机、权限、事务和审计；Python 服务负责分类、信息抽取、RAG、回复建议、摘要和处理提案。任何退款、换货或维修状态变更都必须由 Java 服务校验并执行，AI 不直接访问或修改业务数据库。
 
-本仓库当前交付物是项目开发规范，后续代码必须以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。
+当前已完成前三周功能及第 4 周 Day 22，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。Day 23 的结构化日志、metrics、成本统计与管理看板尚未实现。
 
 ## 固定技术基线
 
@@ -74,3 +74,17 @@ Day 21：成功分析且通过安全条件时，Java 自动保存 `source=AI,sta
 - 管理员：`admin01`
 
 登录接口为 `POST /api/v1/auth/login`，也支持使用邮箱登录。部署前必须通过 `JWT_SECRET` 提供至少 32 字节的随机密钥，并移除或覆盖演示账号。
+
+## Day 22 安全配置与附件
+
+`/api/v1/admin/**` 仅管理员可访问。CORS 使用 `CORS_ALLOWED_ORIGINS` 精确域名白名单，默认本地前端 `http://localhost:5173`；浏览器继续使用 Bearer JWT。
+
+- 登录/刷新/登出按 IP 每分钟 20 次；AI 按用户 30 次；上传与提案确认各 10 次。配置为 `RATE_LIMIT_AUTH/AI/UPLOAD/CONFIRM`，超限返回 429 和 `Retry-After`。
+- `POST/GET /api/v1/tickets/{ticketId}/attachments` 上传/列表；`GET /api/v1/tickets/{ticketId}/attachments/{attachmentId}/download` 获取 300 秒下载地址。消费者仅本人工单，客服仅分配给本人的工单，管理员可访问。附件限 PNG/JPEG/PDF，10 MiB；知识文档限 TXT/MD/PDF/DOCX，20 MiB。
+- bucket 保持私有，校验文件 MIME 与内容，随机对象 key，强制下载。**尚未集成完整恶意文件扫描能力**；格式校验不替代杀毒扫描。
+- HMAC 分离 `JAVA_INTERNAL_SECRET`（Java 发往 Python）与 `AI_INTERNAL_SECRET`（Python 发往 Java）。Redis 存储防重放 nonce 和限流计数；仅本地开发可回退到进程内存，生产不可回退。
+- 浏览器对话目前仅检索 GLOBAL 文档，商品范围检索需后续加入 Java 可信上下文；客户端不能自行指定检索权限。
+- `prod` 要求三种签名密钥至少 32 字节且互不相同，拒绝默认/占位密钥、开发基础设施密码以及与 `local/demo` 混用。配置参考 [.env.example](.env.example) 与 [部署手册](docs/11-deployment.md)；Java 需通过环境变量导入，Python 读取 `ai-service/.env`。
+- 演示 seed 改为 `V1000__demo_seed.sql`。已有旧 V9 seed 数据库先按部署手册检查历史并备份；不要直接修改迁移历史。
+
+验证：`.\mvnw.cmd test`；Python 在 `ai-service` 下执行 `.\.venv\Scripts\python.exe -m pytest -q`。Docker 29 与旧 docker-java API 不兼容时，可用 `.\mvnw.cmd test '-Dapi.version=1.44'`，Testcontainers 仍需要能拉取测试镜像。

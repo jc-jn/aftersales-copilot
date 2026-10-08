@@ -1,6 +1,7 @@
 import hashlib, uuid
 from typing import Any
 import httpx
+from urllib.parse import urlsplit
 from .config import settings
 from .documents import chunk_document, clean_text, decode_document, parse_document, sha256_bytes
 from .providers import embedding_provider
@@ -19,12 +20,27 @@ class QdrantClient:
 
 async def index_document(request: dict[str,Any], client: httpx.AsyncClient | None = None) -> dict[str,Any]:
     if request.get("objectUrl"):
+        target = urlsplit(request["objectUrl"])
+        allowed = urlsplit(settings.minio_endpoint)
+        if (target.scheme, target.netloc) != (allowed.scheme, allowed.netloc) or target.username or target.fragment:
+            raise ValueError("DOCUMENT_URL_NOT_ALLOWED")
         own_download = client is None
         download_client = client or httpx.AsyncClient(timeout=20)
-        response = await download_client.get(request["objectUrl"]); response.raise_for_status(); data = response.content
-        if own_download: await download_client.aclose()
+        try:
+            content = bytearray()
+            async with download_client.stream("GET", request["objectUrl"], follow_redirects=False) as response:
+                response.raise_for_status()
+                async for part in response.aiter_bytes():
+                    content.extend(part)
+                    if len(content) > 20 * 1024 * 1024:
+                        raise ValueError("DOCUMENT_SIZE_INVALID")
+            data = bytes(content)
+        finally:
+            if own_download: await download_client.aclose()
     else:
         data=decode_document(request.get("contentBase64"),request["fileName"])
+    if len(data) > 20 * 1024 * 1024:
+        raise ValueError("DOCUMENT_SIZE_INVALID")
     actual_sha=sha256_bytes(data)
     expected=request.get("contentSha256")
     if expected and expected != actual_sha: raise ValueError("DOCUMENT_SHA256_MISMATCH")

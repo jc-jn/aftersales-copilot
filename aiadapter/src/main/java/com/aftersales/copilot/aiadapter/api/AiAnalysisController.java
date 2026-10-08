@@ -12,11 +12,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/tickets")
 public class AiAnalysisController {
     private final AiTaskRetryService service;
-    public AiAnalysisController(AiTaskRetryService service) { this.service = service; }
+    private final com.aftersales.copilot.auth.application.TicketAccessGuard access;
+    public AiAnalysisController(AiTaskRetryService service, com.aftersales.copilot.auth.application.TicketAccessGuard access) { this.service = service; this.access = access; }
     @GetMapping("/{ticketId}/ai-analysis/latest")
-    public ApiResponse<?> latest(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long ticketId) { check(user); return ok(service.latestAnalysis(ticketId)); }
+    public ApiResponse<?> latest(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long ticketId) { check(user); access.requireAccess(user,ticketId); return ok(service.latestAnalysis(ticketId)); }
     @PostMapping("/{ticketId}/ai-analysis/retry")
-    public ApiResponse<?> retry(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long ticketId) { check(user); return ok(service.retryTicketAnalysis(ticketId, user.id())); }
+    public ApiResponse<?> retry(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long ticketId) { check(user); access.requireAccess(user,ticketId); return ok(service.retryTicketAnalysis(ticketId, user.id())); }
     private void check(AuthenticatedUser user) { if (user == null || (user.role() != UserRole.AGENT && user.role() != UserRole.ADMIN)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN); }
     private ApiResponse<?> ok(Object value) { return ApiResponse.success(value, MDC.get("traceId")); }
 }

@@ -21,6 +21,17 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:aftersales}
     password: ${RABBITMQ_PASSWORD:rabbitmq_dev_password}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_dev_password}
+      timeout: 500ms
+      connect-timeout: 500ms
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
 server:
   port: ${SERVER_PORT:8080}
 app:
@@ -34,8 +45,17 @@ app:
     jwt-issuer: aftersales-server
     jwt-access-ttl: PT15M
     jwt-refresh-ttl: P7D
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    local-state-fallback: false
+    rate-limit:
+      auth: ${RATE_LIMIT_AUTH:20}
+      ai: ${RATE_LIMIT_AI:30}
+      upload: ${RATE_LIMIT_UPLOAD:10}
+      confirm: ${RATE_LIMIT_CONFIRM:10}
   ai:
-    internal-secret: ${AI_INTERNAL_SECRET:change-me-local-only}
+    base-url: ${AI_BASE_URL:http://localhost:8000}
+    internal-secret: ${AI_INTERNAL_SECRET}
+    java-internal-secret: ${JAVA_INTERNAL_SECRET}
     outbox-interval-ms: ${AI_OUTBOX_INTERVAL_MS:1000}
     llm-base-url: ${LLM_BASE_URL:https://api.openai.com/v1}
     llm-api-key: ${LLM_API_KEY:}

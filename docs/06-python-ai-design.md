@@ -32,7 +32,8 @@ Python 服务是无业务写权限的 AI 编排服务，负责：
 
 ```env
 APP_ENV=local
-AI_INTERNAL_SECRET=change-me
+AI_INTERNAL_SECRET=<at-least-32-random-bytes-for-python-outbound>
+JAVA_INTERNAL_SECRET=<different-32-random-bytes-for-java-outbound>
 LLM_PROVIDER=dashscope
 LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_API_KEY=...
@@ -196,4 +197,3 @@ OutputSchemaError       -> AI_OUTPUT_INVALID，修复一次后失败
 - Qdrant 集成测试可用容器或独立测试 collection。
 - Prompt golden tests 比较结构化字段和事实，不要求自然语言逐字相等。
 - 每次修改 Prompt 都更新 `prompt_version` 和评测结果，不覆盖历史版本。
-

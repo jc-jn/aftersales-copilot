@@ -89,6 +89,8 @@
 | GET | `/tickets/{ticketId}/timeline` | 时间线 |
 | POST | `/tickets/{ticketId}/messages` | 发送公开消息/客服内部备注 |
 | POST | `/tickets/{ticketId}/attachments` | 上传附件，先校验再存储 |
+| GET | `/tickets/{ticketId}/attachments` | 列出有权限访问的附件 |
+| GET | `/tickets/{ticketId}/attachments/{attachmentId}/download` | 校验归属后返回 300 秒下载签名地址 |
 | POST | `/tickets/{ticketId}/supplement` | 用户补充结构化信息并恢复客服处理 |
 | POST | `/tickets/{ticketId}/cancel` | 取消允许取消的工单 |
 | POST | `/tickets/{ticketId}/rating` | 对 `RESOLVED/CLOSED` 工单评价一次 |
@@ -252,7 +254,8 @@ data: {"code":"AI_PROVIDER_UNAVAILABLE","message":"AI 服务暂不可用，请�
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/admin/knowledge-bases` | 创建知识库 |
-| POST | `/admin/knowledge-documents` | 上传文档及范围元数据 |
+| POST | `/admin/knowledge/documents` | 管理员上传文档及范围元数据（当前已实现路径） |
+| GET | `/admin/knowledge/documents/{id}/download` | 管理员获取 300 秒下载地址 |
 | GET | `/admin/knowledge-documents` | 列表与状态 |
 | GET | `/admin/knowledge-documents/{id}` | 详情和索引结果 |
 | POST | `/admin/knowledge-documents/{id}/reindex` | 递增 indexVersion 并重建 |
@@ -325,10 +328,11 @@ Python 使用独立服务身份和同样的 HMAC 规则。
 | POST | `/internal/v1/ai-results/ticket-analysis` | 回写分析 |
 | POST | `/internal/v1/ai-results/document-index` | 回写索引状态和 chunk 元数据 |
 | POST | `/internal/v1/ai-results/closure-summary` | 回写摘要 |
-| GET | `/internal/v1/tools/orders/{orderNo}` | 受控订单摘要 |
-| GET | `/internal/v1/tools/orders/{orderNo}/logistics` | 物流摘要 |
+| GET | `/internal/v1/tools/tickets/{ticketId}/orders/{orderNo}` | 校验工单与订单绑定后的摘要 |
+| GET | `/internal/v1/tools/tickets/{ticketId}/orders/{orderNo}/logistics` | 校验工单与订单绑定后的物流摘要 |
 | GET | `/internal/v1/tools/order-items/{id}/warranty` | 质保及 Java 资格计算 |
 | GET | `/internal/v1/tools/tickets/{id}/history` | 当前用户/商品的必要历史，限制字段 |
+| POST | `/internal/v1/knowledge/documents/{id}/download` | HMAC 鉴权后为索引消费者生成新的 300 秒下载地址，避免队列积压导致签名过期 |
 
 分析回调：
 

@@ -5,7 +5,7 @@ from .rag import search_policy
 
 async def stream_answer(ticket_id: int, message: str, context: dict[str, Any] | None = None):
     try:
-        citations = await search_policy(message, {"ticketId": ticket_id} if context and context.get("ticketId") else {}, top_k=3)
+        citations = await search_policy(message, {"scopeType": "GLOBAL"}, top_k=3)
     except Exception:
         citations = []
     prompt = json.dumps({"ticketId": ticket_id, "message": message, "evidence": citations}, ensure_ascii=False)

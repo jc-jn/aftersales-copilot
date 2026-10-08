@@ -18,7 +18,17 @@ async def process_envelope(envelope: dict[str,Any], client: httpx.AsyncClient | 
 
 async def process_document_envelope(envelope: dict[str,Any]) -> dict[str,Any]:
     if envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "knowledge.document.index.requested.v1": raise ValueError("unsupported event")
-    result = await index_document(envelope["data"])
+    data = dict(envelope["data"])
+    path = f"/internal/v1/knowledge/documents/{data['documentId']}/download"
+    ts = str(int(time.time()*1000)); nonce = str(uuid.uuid4())
+    canonical = f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(b'').hexdigest()}"
+    signature = hmac.new(settings.ai_internal_secret.encode(), canonical.encode(), hashlib.sha256).hexdigest()
+    headers = {"X-Internal-Service":"ai-service", "X-Internal-Timestamp":ts, "X-Internal-Nonce":nonce, "X-Internal-Signature":signature}
+    async with httpx.AsyncClient(timeout=10) as http:
+        response = await http.post(settings.java_internal_base_url+path, content=b"", headers=headers)
+        response.raise_for_status()
+        data["objectUrl"] = response.json()["url"]
+    result = await index_document(data)
     data=envelope["data"]; callback={"taskId":data["taskId"],"documentId":data["documentId"],"indexVersion":data["indexVersion"],**result}
     body=json.dumps(callback,separators=(",",":"),ensure_ascii=False).encode(); path="/internal/v1/ai-results/document-index"; ts=str(int(time.time()*1000)); nonce=str(uuid.uuid4()); canonical=f"{ts}\n{nonce}\nPOST\n{path}\n{hashlib.sha256(body).hexdigest()}"; signature=hmac.new(settings.ai_internal_secret.encode(),canonical.encode(),hashlib.sha256).hexdigest(); headers={"Content-Type":"application/json","X-Internal-Service":"ai-service","X-Internal-Timestamp":ts,"X-Internal-Nonce":nonce,"X-Internal-Signature":signature};
     async with httpx.AsyncClient(timeout=10) as http: response=await http.post(settings.java_internal_base_url+path,content=body,headers=headers); response.raise_for_status()

@@ -1,4 +1,4 @@
--- All demo accounts use password: Demo@123456
+-- All demo accounts use password: Demo@123456. Reserved demo version range starts at 1000.
 INSERT INTO sys_user (id, username, email, password_hash, display_name, role, status, agent_online, last_assigned_at, last_login_at, version, created_at, updated_at, deleted_at) VALUES
     (1001, 'customer01', 'customer01@example.test', '$2b$10$42Rs7b8lU.XnLcOOxs.tBunwC8VqfI4w/qmHS5DsA2q5B1lqvCq6W', '演示用户', 'CUSTOMER', 'ACTIVE', 0, NULL, NULL, 0, '2026-09-01 00:00:00.000', '2026-09-01 00:00:00.000', NULL),
     (1002, 'customer02', 'customer02@example.test', '$2b$10$42Rs7b8lU.XnLcOOxs.tBunwC8VqfI4w/qmHS5DsA2q5B1lqvCq6W', '其他用户', 'CUSTOMER', 'ACTIVE', 0, NULL, NULL, 0, '2026-09-01 00:00:00.000', '2026-09-01 00:00:00.000', NULL),
