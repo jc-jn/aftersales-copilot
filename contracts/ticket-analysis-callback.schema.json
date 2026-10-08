@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "callId",
+    "taskId",
+    "ticketId",
+    "ticketVersion",
+    "status",
+    "result",
+    "usage",
+    "errorCode"
+  ],
+  "properties": {
+    "callId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ticketId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ticketVersion": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "status": {
+      "enum": [
+        "SUCCEEDED",
+        "FAILED"
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/TicketAnalysisResult"
+        }
+      ]
+    },
+    "errorCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model",
+        "promptVersion",
+        "inputTokens",
+        "outputTokens",
+        "estimatedCostMicros",
+        "latencyMs"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "promptVersion": {
+          "type": "string"
+        },
+        "inputTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "outputTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "estimatedCostMicros": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "latencyMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "SUCCEEDED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "type": "object"
+          },
+          "errorCode": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Citation": {
+      "properties": {
+        "chunkId": {
+          "title": "Chunkid",
+          "type": "string"
+        },
+        "documentId": {
+          "title": "Documentid",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "section": {
+          "default": "",
+          "title": "Section",
+          "type": "string"
+        },
+        "quote": {
+          "default": "",
+          "title": "Quote",
+          "type": "string"
+        },
+        "score": {
+          "default": 0,
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "chunkId",
+        "documentId"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "ExtractedTicketInfo": {
+      "additionalProperties": true,
+      "properties": {
+        "issue": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issue"
+        },
+        "attemptedActions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Attemptedactions",
+          "type": "array"
+        }
+      },
+      "title": "ExtractedTicketInfo",
+      "type": "object"
+    },
+    "ProposalSuggestion": {
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "reasonCode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoncode"
+        },
+        "suggestedRefundAmountCent": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggestedrefundamountcent"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "conditions": {
+          "title": "Conditions",
+          "type": "object"
+        },
+        "evidenceCitationIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidencecitationids",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ProposalSuggestion",
+      "type": "object"
+    },
+    "TicketAnalysisResult": {
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "enum": [
+            "REFUND_ONLY",
+            "RETURN_REFUND",
+            "EXCHANGE",
+            "REPAIR",
+            "OTHER"
+          ],
+          "title": "Intent",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "prioritySuggestion": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "URGENT"
+          ],
+          "title": "Prioritysuggestion",
+          "type": "string"
+        },
+        "sentiment": {
+          "enum": [
+            "NEUTRAL",
+            "NEGATIVE",
+            "VERY_NEGATIVE"
+          ],
+          "title": "Sentiment",
+          "type": "string"
+        },
+        "extracted": {
+          "$ref": "#/$defs/ExtractedTicketInfo"
+        },
+        "missingFields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missingfields",
+          "type": "array"
+        },
+        "needsHuman": {
+          "title": "Needshuman",
+          "type": "boolean"
+        },
+        "riskFlags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Riskflags",
+          "type": "array"
+        },
+        "replySuggestion": {
+          "title": "Replysuggestion",
+          "type": "string"
+        },
+        "proposalSuggestion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProposalSuggestion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "intent",
+        "confidence",
+        "prioritySuggestion",
+        "sentiment",
+        "extracted",
+        "needsHuman",
+        "replySuggestion"
+      ],
+      "title": "TicketAnalysisResult",
+      "type": "object"
+    }
+  }
+}

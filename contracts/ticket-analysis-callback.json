@@ -1,0 +1,30 @@
+{
+  "callId": "contract-call-v1",
+  "taskId": 9007199254740993,
+  "ticketId": 60001,
+  "ticketVersion": 1,
+  "status": "SUCCEEDED",
+  "errorCode": null,
+  "result": {
+    "intent": "OTHER",
+    "confidence": 0,
+    "prioritySuggestion": "MEDIUM",
+    "sentiment": "NEUTRAL",
+    "extracted": {"issue": "UNKNOWN", "attemptedActions": []},
+    "missingFields": [],
+    "needsHuman": true,
+    "riskFlags": ["KNOWLEDGE_NO_EVIDENCE"],
+    "replySuggestion": "当前资料不足，请联系人工客服。",
+    "proposalSuggestion": null,
+    "citations": []
+  },
+  "usage": {
+    "provider": "fake",
+    "model": "fake-v1",
+    "promptVersion": "ticket-analysis-v2",
+    "inputTokens": null,
+    "outputTokens": null,
+    "estimatedCostMicros": 0,
+    "latencyMs": 0
+  }
+}

@@ -11,10 +11,37 @@ class Settings(BaseSettings):
     minio_endpoint: str = "http://localhost:9000"
     java_internal_base_url: str = "http://localhost:8080"
     rabbitmq_url: str = "amqp://aftersales:rabbitmq_dev_password@localhost:5672/"
-    llm_provider: Literal["fake"] = "fake"
+    llm_provider: Literal["fake", "deepseek"] = "fake"
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_api_key: str = ""
+    llm_chat_model: str = "deepseek-v4-pro"
+    llm_max_tokens: int = 512
+    embedding_provider: Literal["fake", "siliconflow"] = "fake"
+    embedding_base_url: str = "https://api.siliconflow.cn/v1"
+    embedding_api_key: str = ""
+    embedding_model: str = "BAAI/bge-m3"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "aftersales_kb_v1"
     embedding_dimension: int = 8
+    rag_score_threshold: float | None = None
+
+    @model_validator(mode="after")
+    def validate_rag_threshold(self):
+        import math
+        if self.rag_score_threshold is not None and (not math.isfinite(self.rag_score_threshold) or not -1 <= self.rag_score_threshold <= 1):
+            raise ValueError("RAG_SCORE_THRESHOLD must be a finite Cosine score between -1 and 1")
+        if not 1 <= self.llm_max_tokens <= 4096 or self.embedding_dimension <= 0:
+            raise ValueError("Invalid token limit or embedding dimension")
+        from urllib.parse import urlsplit
+        for kind, endpoint, expected_host in (
+            (self.llm_provider, self.llm_base_url, "api.deepseek.com"),
+            (self.embedding_provider, self.embedding_base_url, "api.siliconflow.cn"),
+        ):
+            url = urlsplit(endpoint)
+            if kind != "fake" and (url.scheme != "https" or url.hostname != expected_host
+                                    or url.username or url.password or url.query or url.fragment):
+                raise ValueError("Provider endpoint must use its trusted HTTPS host")
+        return self
 
     @model_validator(mode="after")
     def validate_production(self):

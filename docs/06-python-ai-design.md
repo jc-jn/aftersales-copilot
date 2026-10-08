@@ -56,6 +56,10 @@ Embedding 维度不能凭经验硬编码。首次初始化 collection 前调用�
 
 ## 4. Provider 抽象
 
+Day 25 实际适配：`LLM_PROVIDER=deepseek` 调用官方 HTTPS `/chat/completions`（`deepseek-v4-pro`，JSON 输出，非思考模式，默认最多512输出Token，不传工具、不自动重试）；`EMBEDDING_PROVIDER=siliconflow` 调用 `/v1/embeddings`，使用 `BAAI/bge-m3`。双 API Key 分别使用 `LLM_API_KEY`、`EMBEDDING_API_KEY`，不进入浏览器或版本控制。Fake 仍为默认，普通测试强制 Fake。真实响应保留实际 usage；无法核实的费用保持未知。分析输出经过 Pydantic 和引用来源校验后才回调；现有 MQ 仅传ID、不含事实和证据，分析会保守转人工，不扩展业务事实工具链。
+
+Embedding 请求逐批校验数量、顺序、非零有限数值和配置维度；Qdrant 已有 collection 校验维度和 Cosine 距离。Fake 8维不能与 bge-m3 1024维混用，须使用新 collection 并重新索引文档。
+
 ```python
 class ChatProvider(Protocol):
     async def structured(self, messages, schema, settings) -> ProviderResult: ...

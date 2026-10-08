@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["eventId", "eventType", "occurredAt", "traceId", "producer", "schemaVersion", "data"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "ticket.ai.analyze.requested.v1"},
+    "occurredAt": {"type": "string", "minLength": 1},
+    "traceId": {"type": "string", "minLength": 1},
+    "producer": {"const": "aftersales-server"},
+    "schemaVersion": {"const": 1, "type": "integer"},
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["taskId", "ticketId", "ticketVersion", "callId"],
+      "properties": {"taskId": {"type": "integer", "minimum": 1}, "ticketId": {"type": "integer", "minimum": 1}, "ticketVersion": {"type": "integer", "minimum": 0}, "callId": {"type": "string", "minLength": 1}}
+    }
+  }
+}

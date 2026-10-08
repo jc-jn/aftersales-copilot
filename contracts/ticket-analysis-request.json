@@ -1,0 +1,14 @@
+{
+  "eventId": "contract-event-v1",
+  "eventType": "ticket.ai.analyze.requested.v1",
+  "occurredAt": "2026-10-08T00:00:00Z",
+  "traceId": "contract-trace-v1",
+  "producer": "aftersales-server",
+  "schemaVersion": 1,
+  "data": {
+    "taskId": 9007199254740993,
+    "ticketId": 60001,
+    "ticketVersion": 1,
+    "callId": "contract-call-v1"
+  }
+}

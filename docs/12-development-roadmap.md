@@ -71,6 +71,8 @@ Day 22 已落地：管理员路径授权与默认拒绝、CORS 白名单、工�
 Day 23 已落地：Java ECS/Python JSON 日志与 trace 传递、Java 管理员/Python HMAC Prometheus 指标、V11 AI 调用账本和重复回调去重、未知历史/Token/成本口径、经核实 CNY 价格配置与十进制计价、管理员日期筛选/概览/模型与每日用量/CSV 导出/ECharts 趋势、只读预算预警。真实 Python Provider、预算自动阻断和 Grafana/Loki 部署留待后续。
 - Day 24：Java/Python/前端测试补齐，契约测试。
 - Day 25：RAG 阈值评测、Prompt 注入和无答案测试。
+
+Day 24–25 已落地：轻量共用 JSON Schema/MQ/回调/SSE 契约、Java 实际生产与消费测试、Python Schema/Provider/安全/阈值回归、前端 Vitest 拆包与错误状态测试；DeepSeek + SiliconFlow bge-m3 真实适配、47条虚构评测资料、标定/验证拆分、阈值扫描及预算预留、版本化真实报告、注入风险与无答案降级。评测门槛不通过时不自动启用阈值，具体效果和费用见 `ai-service/evals/README.md`；未扩展Day 26–28内容。
 - Day 26：Docker 全栈、Nginx、云环境或本地 demo 部署。
 - Day 27：性能测试、恢复演练、修复关键问题。
 - Day 28：README、架构图、演示数据、2～3 分钟视频、简历描述。

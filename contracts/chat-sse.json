@@ -1,0 +1,5 @@
+[
+  {"event": "meta", "data": {"ticketId": 60001, "citations": []}},
+  {"event": "token", "data": {"text": "当前资料不足，请联系人工客服。"}},
+  {"event": "done", "data": {"citations": [], "usage": {"provider": "fake", "model": "fake-v1", "promptVersion": "chat-v3", "inputTokens": null, "outputTokens": null, "estimatedCostMicros": 0, "latencyMs": 0}, "needsHuman": true, "riskFlags": ["KNOWLEDGE_NO_EVIDENCE"]}}
+]

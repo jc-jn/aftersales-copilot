@@ -56,6 +56,12 @@
 
 ## 4. 契约测试
 
+Day 24 采用轻量共用契约：`contracts/` 保存 MQ、分析回调、SSE JSON Schema 和固定样例；Java 对实际 Outbox 序列化及回调消费做无外部依赖测试，Python 校验同一份样例，前端复用 SSE 样例。测试固定当前实现的 `meta/token/done/error` 事件，覆盖字节拆包、CRLF、Unicode、心跳和终止事件。内部 MQ/回调 ID 目前使用 JSON 整数（Python/Java 保持 64 位精度），浏览器公共 API 仍应使用字符串 ID。
+
+Day 25 评测使用独立的虚构知识语料和至少 40 条人工标注问题。真实模型配置和调用费用上限由运行者提供；报告记录模型、维度、数据集摘要、时间、阈值扫描结果和拒答指标。Fake 只用于免费回归，不用于真实语义阈值结论。评测默认离线检查，真实调用须显式开启。
+
+2026-10-08 验证：Java 47项通过（包含9项MySQL/Testcontainers集成测试，无跳过；本机Ryuk无法拉取，按部署手册仅本次禁用）；Python 68项通过；前端9项通过、生产构建成功。真实模型两轮共94次聊天调用，合计高峰价估算0.457101元。chat-v3无答案/注入11项均转人工；检索候选0.63未通过独立验证，保持阈值未配置。数据和完整指标见 `ai-service/evals/README.md`。
+
 维护 JSON Schema/OpenAPI 作为事实来源：
 
 - Java producer 契约测试生成 `ticket.ai.analyze.requested.v1` fixture。
@@ -121,4 +127,3 @@
 - Python 评测结果有版本和日期。
 - 无高危硬编码密钥。
 - Docker demo E2E 至少完整跑通一次并录屏。
-

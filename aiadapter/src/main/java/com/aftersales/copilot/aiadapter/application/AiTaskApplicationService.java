@@ -92,6 +92,8 @@ public class AiTaskApplicationService implements AiTaskScheduler, AiTaskRetrySer
     @SuppressWarnings("unchecked")
     private void createAiDraftIfSafe(long ticketId, Map<String, Object> result, boolean stale, LocalDateTime now) {
         if (stale || Boolean.TRUE.equals(result.get("needsHuman")) || result.get("proposalSuggestion") == null) return;
+        if (!(result.get("riskFlags") instanceof List<?> flags) || !flags.isEmpty()) return;
+        if (!(result.get("citations") instanceof List<?> citations) || citations.isEmpty()) return;
         if (jdbc.queryForObject("SELECT COUNT(*) FROM service_proposal WHERE ticket_id=? AND status IN ('DRAFT','PENDING_CONFIRMATION','CONFIRMED')", Integer.class, ticketId) > 0) return;
         Map<String, Object> suggestion = (Map<String, Object>) result.get("proposalSuggestion");
         String type = String.valueOf(suggestion.getOrDefault("type", result.getOrDefault("intent", "OTHER")));

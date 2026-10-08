@@ -207,6 +207,8 @@ Idempotency-Key: 01K5CONFIRMULID
 
 ### 6.2 SSE 事件
 
+Day 19–25 当前可执行契约使用 `meta`（`ticketId/citations`）、`token`（`text`）、`done`（`citations/usage/needsHuman/riskFlags`）与 `error`（`code/retryable`）；共用样例和 Schema 位于 `contracts/`。下面的 `delta/tool_status/citation` 为后续扩展设计，当前浏览器与 Python 不发送这些事件。无证据或注入风险使用正常 `done` 结束并标记转人工；Provider 或用量回调失败使用 `error` 终止。
+
 每个事件包含 `event:` 和单行 JSON `data:`：
 
 ```text

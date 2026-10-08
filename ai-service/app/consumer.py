@@ -6,13 +6,14 @@ from .indexer import index_document
 from .callbacks import post_callback
 from .model_calls import measured_call
 from .observability import trace_id, normalize_trace
+from .safety import prompt_for
 
 async def process_envelope(envelope: dict[str,Any], client: httpx.AsyncClient | None = None) -> dict[str,Any]:
-    if envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "ticket.ai.analyze.requested.v1": raise ValueError("unsupported event")
+    if type(envelope.get("schemaVersion")) is not int or envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "ticket.ai.analyze.requested.v1": raise ValueError("unsupported event")
     data=envelope["data"]
     token = trace_id.set(normalize_trace(envelope.get("traceId")))
     try:
-        result, usage, error_code = await measured_call(json.dumps(data, ensure_ascii=False), "TICKET_ANALYSIS", "ticket-analysis-v1")
+        result, usage, error_code = await measured_call(prompt_for("ticket_analysis_v2", data), "TICKET_ANALYSIS", "ticket-analysis-v2")
         callback={"callId":data.get("callId") or f"legacy-{data['taskId']}","taskId":data["taskId"],"ticketId":data["ticketId"],"ticketVersion":data["ticketVersion"],"status":"FAILED" if error_code else "SUCCEEDED","result":result,"errorCode":error_code,"usage":usage}
         await post_callback("/internal/v1/ai-results/ticket-analysis", callback, client)
     finally:
@@ -20,7 +21,7 @@ async def process_envelope(envelope: dict[str,Any], client: httpx.AsyncClient | 
     return callback
 
 async def process_document_envelope(envelope: dict[str,Any]) -> dict[str,Any]:
-    if envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "knowledge.document.index.requested.v1": raise ValueError("unsupported event")
+    if type(envelope.get("schemaVersion")) is not int or envelope.get("schemaVersion") != 1 or envelope.get("eventType") != "knowledge.document.index.requested.v1": raise ValueError("unsupported event")
     data = dict(envelope["data"])
     path = f"/internal/v1/knowledge/documents/{data['documentId']}/download"
     ts = str(int(time.time()*1000)); nonce = str(uuid.uuid4())

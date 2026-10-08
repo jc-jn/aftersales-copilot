@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array", "minItems": 1,
+  "items": {
+    "type": "object", "additionalProperties": false, "required": ["event", "data"],
+    "properties": {"event": {"enum": ["meta", "token", "done", "error"]}, "data": {"type": "object"}},
+    "allOf": [
+      {"if": {"properties": {"event": {"const": "meta"}}}, "then": {"properties": {"data": {"required": ["ticketId", "citations"], "properties": {"ticketId": {"type": "integer"}, "citations": {"type": "array"}}}}}},
+      {"if": {"properties": {"event": {"const": "token"}}}, "then": {"properties": {"data": {"required": ["text"], "properties": {"text": {"type": "string"}}}}}},
+      {"if": {"properties": {"event": {"const": "done"}}}, "then": {"properties": {"data": {"required": ["citations", "usage", "needsHuman", "riskFlags"], "properties": {"citations": {"type": "array"}, "usage": {"type": "object"}, "needsHuman": {"type": "boolean"}, "riskFlags": {"type": "array", "items": {"type": "string"}}}}}}},
+      {"if": {"properties": {"event": {"const": "error"}}}, "then": {"properties": {"data": {"required": ["code", "retryable"], "properties": {"code": {"type": "string"}, "retryable": {"type": "boolean"}}}}}}
+    ]
+  }
+}

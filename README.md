@@ -2,7 +2,7 @@
 
 面向 3C 电商售后场景的 Java + Python AI 全栈项目。Java 服务负责用户、订单、工单、状态机、权限、事务和审计；Python 服务负责分类、信息抽取、RAG、回复建议、摘要和处理提案。任何退款、换货或维修状态变更都必须由 Java 服务校验并执行，AI 不直接访问或修改业务数据库。
 
-当前已完成前三周功能及第 4 周 Day 22–23，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。
+当前已完成前三周功能及第 4 周 Day 22–25，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。Day 25 的真实评测已执行；候选阈值是否可采用以评测报告为准。
 
 ## 固定技术基线
 
@@ -97,4 +97,12 @@ Day 21：成功分析且通过安全条件时，Java 自动保存 `source=AI,sta
 - Java 指标 `/actuator/prometheus` 仅管理员；Python `GET /internal/v1/metrics` 需 HMAC。指标名和鉴权采集方式见 [部署手册](docs/11-deployment.md)。Python consumer 为独立进程，持久用量以 MySQL 为准。
 - `ai_call_log` 按 callId 去重记录成功/失败调用。Fake 免费且不伪造 Token；真实用量或价格未核实时成本为未知。`AI_PRICES_JSON=[]` 默认不计未经核实的模型费用，价格按已核实 CNY 来源配置。
 - V11 将历史分析 usage 标为未知；旧消息兼容为 `legacy-{taskId}`。预算默认 2/40/50 元，**仅监测预警，未自动阻断 AI**；存在未知成本时实际费用仍需核实。
-- Python 当前仅支持 `LLM_PROVIDER=fake`；真实 Python Provider、预算自动关闭策略和完整监控部署尚未实现。Java 旧 `real-ai` Provider 不在现有 Python 主调用链中，不能把启用 Java profile 视为 Python 已切到真实模型。
+- Day 23 时 Python 仅支持 Fake；Day 25 已增加 DeepSeek/SiliconFlow 适配。业务预算自动关闭策略和完整监控部署尚未实现。Java 旧 `real-ai` Provider 不在 Python 主调用链中。
+
+## Day 24–25 测试与 RAG 评测
+
+Java/Python/前端复用 `contracts/` 的 MQ、分析回调、SSE 样例；前端新增 `npm test`。SSE 支持字节拆包、Unicode、CRLF、心跳，并识别错误与不完整结束。
+
+真实模型配置：DeepSeek `deepseek-v4-pro`，SiliconFlow `BAAI/bge-m3`（独立密钥，实测1024维）。普通测试使用 Fake，不产生模型费用。评测包含47条虚构标注问题、阈值扫描、独立验证、注入与无答案、引用和费用记录。说明和命令见 [评测手册](ai-service/evals/README.md)。Prompt 注入检测、引用来源验证、Java 风险提案拦截和无证据转人工均已接入。
+
+阈值未配置时关闭证据回答；候选未通过验证时保留报告，不自动写入阈值。切换 Embedding 后使用新 Qdrant collection 并重新索引，不能复用原 Fake 向量。当前MQ分析消息只包含ID，因此缺少事实和证据时保守转人工。

@@ -1,0 +1,12 @@
+{"chunkId":"refund-1","documentId":"doc-refund","indexVersion":1,"title":"虚构演示：仅退款政策","section":"窗口","scopeType":"GLOBAL","documentType":"POLICY","quote":"仅退款窗口为签收后7天。是否符合仅退款资格和退款金额，以Java规则校验为准；AI不执行退款。"}
+{"chunkId":"return-1","documentId":"doc-return","indexVersion":1,"title":"虚构演示：退货退款政策","section":"流程","scopeType":"GLOBAL","documentType":"POLICY","quote":"退货退款申请窗口为签收后7天。需用户确认提案、寄回商品并通过收货检查后，由Java模拟退款。"}
+{"chunkId":"exchange-1","documentId":"doc-exchange","indexVersion":1,"title":"虚构演示：换货政策","section":"流程","scopeType":"GLOBAL","documentType":"POLICY","quote":"换货窗口为签收后15天。需寄回商品并通过收货检查，再生成补发记录与模拟物流。"}
+{"chunkId":"repair-1","documentId":"doc-repair","indexVersion":1,"title":"虚构演示：维修政策","section":"流程","scopeType":"GLOBAL","documentType":"POLICY","quote":"全局默认维修申请窗口为签收后365天。用户寄回后，客服收货检查、检测、维修并寄回；具体资格以Java规则为准。"}
+{"chunkId":"global-1","documentId":"doc-global","indexVersion":1,"title":"虚构演示：通用政策","section":"人工处理","scopeType":"GLOBAL","documentType":"POLICY","quote":"超出售后窗口、资料不足或政策冲突时，请联系人工客服。所有提案须客服审核发布、用户确认；AI不能保证批准。退款额不得超过订单项剩余实付金额。"}
+{"chunkId":"earbud-1","documentId":"doc-earbud","indexVersion":1,"title":"虚构演示：耳机说明书","section":"无声","scopeType":"GLOBAL","documentType":"MANUAL","quote":"耳机右侧无声时，先检查电量和充电触点，再重置耳机并重新蓝牙配对。持续无声请联系人工客服。"}
+{"chunkId":"keyboard-1","documentId":"doc-keyboard","indexVersion":1,"title":"虚构演示：键盘说明书","section":"连接","scopeType":"GLOBAL","documentType":"MANUAL","quote":"键盘无法连接时，确认电量与连接模式，检查USB接收器并尝试重新配对；按键异常时检查键帽并尝试有线连接。"}
+{"chunkId":"phone-1","documentId":"doc-phone","indexVersion":1,"title":"虚构演示：手机说明书","section":"无法开机","scopeType":"GLOBAL","documentType":"MANUAL","quote":"手机无法开机时，先使用匹配充电器充电30分钟，再长按电源键重启；避免自行拆机，持续异常请联系人工客服。"}
+{"chunkId":"faq-1","documentId":"doc-faq","indexVersion":1,"title":"虚构演示：售后FAQ","section":"资料","scopeType":"GLOBAL","documentType":"FAQ","quote":"提交售后工单时填写故障描述、已尝试操作，按客服要求补充序列号和故障视频。寄回前请备份手机数据。"}
+{"chunkId":"expired-1","documentId":"doc-expired","indexVersion":1,"title":"过期政策（反例）","section":"失效","scopeType":"GLOBAL","documentType":"POLICY","effectiveTo":"2025-01-01T00:00:00Z","quote":"过期演示政策：仅退款窗口100天，旧版本不可用于当前结论。"}
+{"chunkId":"wrong-scope-1","documentId":"doc-special","indexVersion":1,"title":"其他商品专属政策（反例）","section":"专属","scopeType":"PRODUCT","scopeId":999,"documentType":"POLICY","quote":"商品999专属换货窗口100天，不适用于其他商品或全局问答。"}
+{"chunkId":"old-version-1","documentId":"doc-refund","indexVersion":0,"title":"旧版仅退款政策（反例）","section":"旧版","scopeType":"GLOBAL","documentType":"POLICY","quote":"旧版演示仅退款窗口30天，当前索引版本为1，此内容不可作为证据。"}

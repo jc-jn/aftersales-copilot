@@ -165,6 +165,14 @@ npm run dev
 
 ## 11. 运维命令
 
+### Day 24–25 测试与真实评测
+
+在项目根目录运行 Java：`.\mvnw.cmd test '-Dapi.version=1.44'`；前端在 `web` 运行 `npm test`、`npm run build`；Python 在 `ai-service` 运行 `.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt` 和 `.\.venv\Scripts\python.exe -m pytest -q`。普通 Python 测试不访问收费模型。
+
+将 `ai-service/.env.example` 复制为 `.env` 后填写 `LLM_API_KEY` 和 `EMBEDDING_API_KEY`，设置 `LLM_PROVIDER=deepseek`、`EMBEDDING_PROVIDER=siliconflow`、`EMBEDDING_DIMENSION=1024`、`QDRANT_COLLECTION=aftersales_bge_m3_v1`。不要输出或提交 `.env`。具体模型、免费范围和20元评测预算见 `ai-service/evals/README.md`。
+
+真实评测在 `ai-service` 执行 `.\.venv\Scripts\python.exe -m evals.run --real --chat --budget-cny 20 --output evals/reports/my-evaluation.json`。输出必须为新路径，避免覆盖历史记录。报告不自动修改阈值配置；只有 `thresholdApproved=true` 时才可把选定值写入 `RAG_SCORE_THRESHOLD`，且必须保持同一模型/维度并对实际知识库重新评测。未标定时默认转人工。脚本预算仅限制本次运行，不是业务服务的账户级预算阻断。
+
 ### Day 23 日志、指标与计费
 
 Java 控制台为 ECS JSON；Python 自有日志为 JSON。Python 使用 `--no-access-log`，避免 uvicorn 原始请求日志包含查询内容。两个服务传递合规 `X-Trace-Id`。Java HTTP 入口日志中的 `durationMs` 为分派耗时（异步请求见 `sse_completed` 全流耗时）；Python HTTP 耗时包括流的生命周期。

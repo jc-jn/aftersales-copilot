@@ -13,6 +13,10 @@ class QdrantClient:
         if response.status_code == 404:
             response=await client.put(f"{self.url}/collections/{self.collection}",json={"vectors":{"size":self.dimension,"distance":"Cosine"}})
         response.raise_for_status()
+        if response.request.method == "GET":
+            config = response.json()["result"]["config"]["params"]["vectors"]
+            if config.get("size") != self.dimension or config.get("distance") != "Cosine":
+                raise ValueError("QDRANT_VECTOR_CONFIG_MISMATCH")
     async def upsert(self, points: list[dict[str,Any]], client: httpx.AsyncClient) -> None:
         response=await client.put(f"{self.url}/collections/{self.collection}/points?wait=true",json={"points":points}); response.raise_for_status()
     async def delete_version(self, document_id: int, index_version: int, client: httpx.AsyncClient) -> None:

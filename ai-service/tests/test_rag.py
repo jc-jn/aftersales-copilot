@@ -3,7 +3,8 @@ import pytest
 from app.rag import search_policy
 
 @pytest.mark.asyncio
-async def test_search_policy_maps_citations_and_filters():
+async def test_search_policy_maps_citations_and_filters(monkeypatch):
+    monkeypatch.setattr("app.rag.settings.rag_score_threshold", 0.8)
     class MockTransport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
             assert request.url.path.endswith("/points/search")
