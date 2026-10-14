@@ -90,6 +90,45 @@ class Day2IntegrationTest {
     com.aftersales.copilot.aiadapter.application.AiTaskApplicationService aiTasks;
 
     @Test
+    void ticketSubmissionIsQueuedWithExactStringIdsAndDuplicateSubmissionRollsBack() throws Exception {
+        long itemId = 9301L;
+        jdbcTemplate.update("INSERT INTO order_item(id,order_id,sku_id,product_name_snapshot,sku_spec_snapshot,unit_price_cent,quantity,paid_amount_cent,refunded_amount_cent,version,created_at,updated_at) "
+                + "SELECT ?,order_id,sku_id,product_name_snapshot,sku_spec_snapshot,unit_price_cent,quantity,paid_amount_cent,0,0,created_at,updated_at FROM order_item WHERE id=3101", itemId);
+        String customerToken = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username", "customer01", "password", "Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        HttpHeaders customer = new HttpHeaders(); customer.setBearerAuth(customerToken); customer.setContentType(MediaType.APPLICATION_JSON);
+        String agentToken = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username", "agent01", "password", "Demo@123456")).getBody())
+                .path("data").path("accessToken").asText();
+        HttpHeaders agent = new HttpHeaders(); agent.setBearerAuth(agentToken);
+        Map<String, Object> body = new java.util.HashMap<>(Map.of("orderItemId", Long.toString(itemId), "requestedType", "REPAIR",
+                "title", "Ticket queue regression", "description", "Exact ID and transaction regression", "clientRequestId", java.util.UUID.randomUUID().toString()));
+        var created = restTemplate.postForEntity(url("/api/v1/tickets"), new HttpEntity<>(body, customer), String.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode ticket = objectMapper.readTree(created.getBody()).path("data");
+        assertThat(ticket.path("id").isTextual()).isTrue();
+        assertThat(ticket.path("id").asLong()).isGreaterThan(9007199254740991L);
+        assertThat(ticket.path("status").asText()).isEqualTo("PENDING_ASSIGNMENT");
+        assertThat(ticket.path("version").asInt()).isEqualTo(1);
+        String id = ticket.path("id").asText();
+        var replay = restTemplate.postForEntity(url("/api/v1/tickets"), new HttpEntity<>(body, customer), String.class);
+        assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(objectMapper.readTree(replay.getBody()).path("data").path("id").asText()).isEqualTo(id);
+        var queue = restTemplate.exchange(url("/api/v1/tickets"), HttpMethod.GET, new HttpEntity<>(agent), String.class);
+        assertThat(objectMapper.readTree(queue.getBody()).path("data").findValuesAsText("id")).contains(id);
+        for (String suffix : new String[]{"", "/proposals", "/timeline"}) {
+            var detail = restTemplate.exchange(url("/api/v1/tickets/" + id + suffix), HttpMethod.GET, new HttpEntity<>(agent), String.class);
+            assertThat(detail.getStatusCode()).isEqualTo(HttpStatus.OK);
+            if (suffix.isEmpty()) assertThat(objectMapper.readTree(detail.getBody()).path("data").path("id").asText()).isEqualTo(id);
+        }
+        body.put("clientRequestId", java.util.UUID.randomUUID().toString());
+        var duplicate = restTemplate.postForEntity(url("/api/v1/tickets"), new HttpEntity<>(body, customer), String.class);
+        assertThat(duplicate.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(objectMapper.readTree(duplicate.getBody()).path("code").asText()).isEqualTo("ACTIVE_TICKET_EXISTS");
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM service_ticket WHERE order_item_id=?", Integer.class, itemId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ticket_timeline WHERE ticket_id=?", Integer.class, Long.parseLong(id))).isEqualTo(2);
+    }
+
+    @Test
     void day23LegacyCallbackKeepsCostUnknownAndDeduplicates() throws Exception {
         String token = objectMapper.readTree(post("/api/v1/auth/login", Map.of("username", "customer01", "password", "Demo@123456")).getBody())
                 .path("data").path("accessToken").asText();

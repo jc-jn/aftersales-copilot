@@ -74,6 +74,8 @@ Day 23 已落地：Java ECS/Python JSON 日志与 trace 传递、Java 管理员/
 
 Day 24–25 已落地：轻量共用 JSON Schema/MQ/回调/SSE 契约、Java 实际生产与消费测试、Python Schema/Provider/安全/阈值回归、前端 Vitest 拆包与错误状态测试；DeepSeek + SiliconFlow bge-m3 真实适配、47条虚构评测资料、标定/验证拆分、阈值扫描及预算预留、版本化真实报告、注入风险与无答案降级。评测门槛不通过时不自动启用阈值，具体效果和费用见 `ai-service/evals/README.md`；未扩展Day 26–28内容。
 - Day 26：Docker 全栈、Nginx、云环境或本地 demo 部署。
+
+Day 26 已落地：Java 21/Python 3.11/Node→Nginx 镜像、独立 Compose demo 覆盖配置、Fake AI API 与独立 MQ 消费者、随机密钥初始化、一条命令构建和健康等待、同源 API/SSE 代理与内部路径隔离、内外 MinIO 下载签名区分、日志轮转和保留数据卷的运行脚本。选择本机 demo，详细过程见 `26-local-demo.md`；Day 27–28 未扩展。
 - Day 27：性能测试、恢复演练、修复关键问题。
 - Day 28：README、架构图、演示数据、2～3 分钟视频、简历描述。
 

@@ -1,10 +1,12 @@
 package com.aftersales.copilot.ticket.infrastructure.mapper;
  import com.aftersales.copilot.ticket.infrastructure.po.*; import com.baomidou.mybatisplus.core.mapper.BaseMapper; import org.apache.ibatis.annotations.*; import java.time.LocalDateTime; import java.util.*;
+ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 @Mapper public interface TicketMapper extends BaseMapper<ServiceTicketPo> {
  record OrderContext(Long itemId,Long orderId,Long customerId,String orderStatus,String productName) {}
- record TicketView(Long id,String ticketNo,Long customerId,Long orderId,Long orderItemId,String requestedType,String confirmedType,String status,String priority,String title,String description,Long assignedAgentId,LocalDateTime firstResponseAt,LocalDateTime resolvedAt,LocalDateTime closedAt,String resolutionCode,String resolutionNote,Integer version,LocalDateTime createdAt,LocalDateTime updatedAt) {}
- record MessageView(Long id,String senderType,Long senderId,String visibility,String messageType,String content,LocalDateTime createdAt) {}
- record TimelineView(Long id,String eventType,String actorType,Long actorId,String summary,String detailJson,LocalDateTime createdAt) {}
+ record TicketView(@JsonSerialize(using=ToStringSerializer.class) Long id,String ticketNo,@JsonSerialize(using=ToStringSerializer.class) Long customerId,@JsonSerialize(using=ToStringSerializer.class) Long orderId,@JsonSerialize(using=ToStringSerializer.class) Long orderItemId,String requestedType,String confirmedType,String status,String priority,String title,String description,@JsonSerialize(using=ToStringSerializer.class) Long assignedAgentId,LocalDateTime firstResponseAt,LocalDateTime resolvedAt,LocalDateTime closedAt,String resolutionCode,String resolutionNote,Integer version,LocalDateTime createdAt,LocalDateTime updatedAt) {}
+ record MessageView(@JsonSerialize(using=ToStringSerializer.class) Long id,String senderType,@JsonSerialize(using=ToStringSerializer.class) Long senderId,String visibility,String messageType,String content,LocalDateTime createdAt) {}
+ record TimelineView(@JsonSerialize(using=ToStringSerializer.class) Long id,String eventType,String actorType,@JsonSerialize(using=ToStringSerializer.class) Long actorId,String summary,String detailJson,LocalDateTime createdAt) {}
  record WorkbenchSummary(Long pendingAssignment,Long myPendingAgent,Long pendingCustomer,Long waitingReturn,Long overdue) {}
  record AgentCandidate(Long id,Long activeCount,LocalDateTime lastAssignedAt) {}
  record EligibilityItem(Long id,Long orderId,Long skuId,Long productId,String category,String orderStatus,Long paidAmountCent,Long refundedAmountCent,LocalDateTime deliveredAt,LocalDateTime warrantyExpireAt,LocalDateTime createdAt) {}

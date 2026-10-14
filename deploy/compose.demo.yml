@@ -1,0 +1,143 @@
+# Overlay on compose.yml. Always use project-name aftersales-demo.
+x-ai: &ai
+  image: aftersales-demo-ai:day26
+  build:
+    context: ..
+    dockerfile: ai-service/Dockerfile
+  restart: unless-stopped
+  environment:
+    APP_ENV: demo
+    AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET:?Run deploy/init-demo.ps1 first}
+    JAVA_INTERNAL_SECRET: ${JAVA_INTERNAL_SECRET:?Run deploy/init-demo.ps1 first}
+    REDIS_URL: redis://:${REDIS_PASSWORD:?Missing REDIS_PASSWORD}@redis:6379/0
+    RABBITMQ_URL: amqp://${RABBITMQ_USER:-aftersales}:${RABBITMQ_PASSWORD:?Missing RABBITMQ_PASSWORD}@rabbitmq:5672/
+    JAVA_INTERNAL_BASE_URL: http://aftersales-server:8080
+    MINIO_ENDPOINT: http://minio:9000
+    QDRANT_URL: http://qdrant:6333
+    QDRANT_COLLECTION: aftersales_demo_fake_v1
+    LLM_PROVIDER: fake
+    EMBEDDING_PROVIDER: fake
+    EMBEDDING_DIMENSION: 8
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mysql:
+    ports: !reset []
+    restart: unless-stopped
+    logging: *logging
+  redis:
+    ports: !reset []
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Missing REDIS_PASSWORD}
+    restart: unless-stopped
+    logging: *logging
+  rabbitmq:
+    ports: !reset []
+    restart: unless-stopped
+    logging: *logging
+  qdrant:
+    ports: !reset []
+    restart: unless-stopped
+    logging: *logging
+  minio:
+    ports: !override
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+    restart: unless-stopped
+    logging: *logging
+
+  ai-service:
+    <<: *ai
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  aftersales-server:
+    image: aftersales-demo-java:day26
+    build:
+      context: ..
+      dockerfile: deploy/java.Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-aftersales}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aftersales}
+      MYSQL_USER: ${MYSQL_USER:-aftersales}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Missing MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Missing REDIS_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-aftersales}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Missing RABBITMQ_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Missing MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Missing MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-aftersales-private}
+      JWT_SECRET: ${JWT_SECRET:?Run deploy/init-demo.ps1 first}
+      AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET:?Run deploy/init-demo.ps1 first}
+      JAVA_INTERNAL_SECRET: ${JAVA_INTERNAL_SECRET:?Run deploy/init-demo.ps1 first}
+      AI_BASE_URL: http://ai-service:8000
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8088}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    logging: *logging
+
+  ai-consumer:
+    <<: *ai
+    command: ["python", "-m", "app.consumer"]
+    depends_on:
+      aftersales-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  web:
+    image: aftersales-demo-web:day26
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8088}:80"
+    restart: unless-stopped
+    depends_on:
+      aftersales-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *logging

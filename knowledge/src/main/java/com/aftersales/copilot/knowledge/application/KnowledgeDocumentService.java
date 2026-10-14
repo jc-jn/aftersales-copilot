@@ -83,13 +83,18 @@ public class KnowledgeDocumentService {
 
     public Map<String, Object> download(AuthenticatedUser user, long id) {
         requireAdmin(user);
-        return indexingDownload(id);
+        return documentDownload(id, false);
     }
 
     public Map<String, Object> indexingDownload(long id) {
+        return documentDownload(id, true);
+    }
+
+    private Map<String, Object> documentDownload(long id, boolean internal) {
         var document = jdbc.queryForList("SELECT object_key,file_name FROM knowledge_document WHERE id=? AND archived_at IS NULL", id)
                 .stream().findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "DOCUMENT_NOT_FOUND"));
-        return Map.of("url", storage.download((String) document.get("object_key"), (String) document.get("file_name")), "expiresIn", 300);
+        String key = (String) document.get("object_key"), filename = (String) document.get("file_name");
+        return Map.of("url", internal ? storage.internalDownload(key, filename) : storage.download(key, filename), "expiresIn", 300);
     }
 
     private void requireAdmin(AuthenticatedUser user) {

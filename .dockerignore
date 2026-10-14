@@ -1,0 +1,16 @@
+.git
+**/target
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+**/.idea
+**/.vscode
+ai-service/evals/reports
+web/vite.config.js
+web/vite.config.d.ts

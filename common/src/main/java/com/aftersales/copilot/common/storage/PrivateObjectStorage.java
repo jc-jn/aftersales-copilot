@@ -16,13 +16,16 @@ import java.util.UUID;
 @Component
 public class PrivateObjectStorage {
     private final MinioClient minio;
+    private final MinioClient publicMinio;
     private final String bucket;
 
     public PrivateObjectStorage(@Value("${app.storage.endpoint}") String endpoint,
+                                @Value("${app.storage.public-endpoint:${app.storage.endpoint}}") String publicEndpoint,
                                 @Value("${app.storage.access-key}") String access,
                                 @Value("${app.storage.secret-key}") String secret,
                                 @Value("${app.storage.bucket}") String bucket) {
-        this.minio = MinioClient.builder().endpoint(endpoint).credentials(access, secret).build();
+        this.minio = MinioClient.builder().endpoint(endpoint).credentials(access, secret).region("us-east-1").build();
+        this.publicMinio = MinioClient.builder().endpoint(publicEndpoint).credentials(access, secret).region("us-east-1").build();
         this.bucket = bucket;
     }
 
@@ -43,10 +46,18 @@ public class PrivateObjectStorage {
     }
 
     public String download(String key, String filename) {
+        return presign(publicMinio, key, filename);
+    }
+
+    public String internalDownload(String key, String filename) {
+        return presign(minio, key, filename);
+    }
+
+    private String presign(MinioClient signer, String key, String filename) {
         try {
             minio.deleteBucketPolicy(DeleteBucketPolicyArgs.builder().bucket(bucket).build());
             String disposition = ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build().toString();
-            return minio.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder().method(Method.GET)
+            return signer.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder().method(Method.GET)
                     .bucket(bucket).object(key).expiry(300)
                     .extraQueryParams(Map.of("response-content-disposition", disposition,
                             "response-content-type", "application/octet-stream")).build());

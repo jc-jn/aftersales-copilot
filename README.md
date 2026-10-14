@@ -2,7 +2,17 @@
 
 面向 3C 电商售后场景的 Java + Python AI 全栈项目。Java 服务负责用户、订单、工单、状态机、权限、事务和审计；Python 服务负责分类、信息抽取、RAG、回复建议、摘要和处理提案。任何退款、换货或维修状态变更都必须由 Java 服务校验并执行，AI 不直接访问或修改业务数据库。
 
-当前已完成前三周功能及第 4 周 Day 22–25，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。Day 25 的真实评测已执行；候选阈值是否可采用以评测报告为准。
+当前已完成前三周功能及第 4 周 Day 22–26，代码以 `docs/` 中的契约为准。发生设计变更时，应先修改文档，再修改代码。Day 25 的真实评测已执行；候选阈值是否可采用以评测报告为准。
+
+## Day 26：最简单的 Docker 本地部署
+
+启动 Docker Desktop（Linux containers），在项目根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\demo.ps1 up
+```
+
+完成后访问 [http://localhost:8088](http://localhost:8088)。脚本自动生成独立随机配置、构建前后端镜像并启动 Nginx、Java、Python API/消费者及五个基础设施；默认 Fake AI，无模型费用。演示账号见下文。详细环境准备、运行验证、端口调整、日志、停止和再次启动见 [Day 26 运行指南](docs/26-local-demo.md)。
 
 ## 固定技术基线
 

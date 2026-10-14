@@ -1,5 +1,11 @@
 # 11. 部署手册
 
+## Day 26 实现范围
+
+本次采用本地 Docker demo：Nginx 静态页面和同源 API 代理、Java 21、Python 3.11 API 和独立 MQ consumer，以及 MySQL/Redis/RabbitMQ/Qdrant/MinIO。使用 `deploy/compose.yml` 加 `deploy/compose.demo.yml`，由 `deploy/demo.ps1` 生成独立随机配置并启动；使用独立项目名 `aftersales-demo` 和数据卷，不复用开发数据库。默认 Fake LLM/Fake Embedding，不需要模型密钥。浏览器入口为 `http://localhost:8088`，MinIO 签名下载为 `http://localhost:9000`；其余服务不发布宿主机端口。
+
+对象存储的容器地址和浏览器地址必须分开：`MINIO_ENDPOINT=http://minio:9000` 用于上传和 AI 内部索引下载，`MINIO_PUBLIC_ENDPOINT=http://localhost:9000` 只用于经过 Java 鉴权的浏览器下载签名，不能用字符串替换已经签名的 URL。Nginx 不代理 `/internal/` 或 `/actuator/`，SSE 禁用缓冲，上传上限为 21 MiB。详细可复制命令、验证、停止和排错见 [Day 26 本地运行指南](26-local-demo.md)。本次不实现云发布、HTTPS、监控平台、性能测试或恢复演练。
+
 ## 1. 开发机准备（Windows 11）
 
 已知开发环境是 Windows 11、Docker 29.7.2、16GB 内存和某款 IDE（具体 IDE 未指定）。还需要：

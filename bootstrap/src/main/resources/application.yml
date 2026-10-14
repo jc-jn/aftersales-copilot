@@ -37,6 +37,7 @@ server:
 app:
   storage:
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT:${MINIO_ENDPOINT:http://localhost:9000}}
     access-key: ${MINIO_ROOT_USER:minioadmin}
     secret-key: ${MINIO_ROOT_PASSWORD:minio_dev_password}
     bucket: ${MINIO_BUCKET:aftersales-private}
